@@ -6,10 +6,11 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
 import java.util.List;
+import org.wso2.carbon.apimgt.governance.rest.api.dto.RuleInfoDTO;
 import javax.validation.constraints.*;
 
 /**
- * Request object for assessing compliance of an api.
+ * A list of rules.
  **/
 
 import io.swagger.annotations.*;
@@ -21,28 +22,48 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 import javax.validation.Valid;
 
-@ApiModel(description = "Request object for assessing compliance of an api.")
+@ApiModel(description = "A list of rules.")
 
-public class AssessAPIComplianceRequestDTO   {
+public class RuleListDTO   {
   
-    private List<String> labels = new ArrayList<String>();
+    private Integer count = null;
+    private List<RuleInfoDTO> list = new ArrayList<RuleInfoDTO>();
 
   /**
-   * Labels associated with the api.
+   * Number of rules returned.
    **/
-  public AssessAPIComplianceRequestDTO labels(List<String> labels) {
-    this.labels = labels;
+  public RuleListDTO count(Integer count) {
+    this.count = count;
     return this;
   }
 
   
-  @ApiModelProperty(example = "[\"security\"]", value = "Labels associated with the api.")
-  @JsonProperty("labels")
-  public List<String> getLabels() {
-    return labels;
+  @ApiModelProperty(example = "2", value = "Number of rules returned.")
+  @JsonProperty("count")
+  public Integer getCount() {
+    return count;
   }
-  public void setLabels(List<String> labels) {
-    this.labels = labels;
+  public void setCount(Integer count) {
+    this.count = count;
+  }
+
+  /**
+   * List of rules.
+   **/
+  public RuleListDTO list(List<RuleInfoDTO> list) {
+    this.list = list;
+    return this;
+  }
+
+  
+  @ApiModelProperty(value = "List of rules.")
+      @Valid
+  @JsonProperty("list")
+  public List<RuleInfoDTO> getList() {
+    return list;
+  }
+  public void setList(List<RuleInfoDTO> list) {
+    this.list = list;
   }
 
 
@@ -54,21 +75,23 @@ public class AssessAPIComplianceRequestDTO   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    AssessAPIComplianceRequestDTO assessAPIComplianceRequest = (AssessAPIComplianceRequestDTO) o;
-    return Objects.equals(labels, assessAPIComplianceRequest.labels);
+    RuleListDTO ruleList = (RuleListDTO) o;
+    return Objects.equals(count, ruleList.count) &&
+        Objects.equals(list, ruleList.list);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(labels);
+    return Objects.hash(count, list);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class AssessAPIComplianceRequestDTO {\n");
+    sb.append("class RuleListDTO {\n");
     
-    sb.append("    labels: ").append(toIndentedString(labels)).append("\n");
+    sb.append("    count: ").append(toIndentedString(count)).append("\n");
+    sb.append("    list: ").append(toIndentedString(list)).append("\n");
     sb.append("}");
     return sb.toString();
   }

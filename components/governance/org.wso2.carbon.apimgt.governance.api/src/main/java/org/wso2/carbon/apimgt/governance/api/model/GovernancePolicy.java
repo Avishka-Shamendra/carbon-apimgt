@@ -16,10 +16,23 @@
  * under the License.
  */
 
-package org.wso2.carbon.apimgt.governance.api;
+package org.wso2.carbon.apimgt.governance.api.model;
 
-public final class GovernanceAPIConstants {
-    public static final String ORGANIZATION = "organization";
-    public static final String RULE_PATH = "rules";
-    public static final String POLICY_PATH = "governance-policies";
+import java.util.ArrayList;
+import java.util.List;
+
+public class GovernancePolicy {
+    private String id;
+    private String name;
+    private String description;
+    private List<String> ruleIds = new ArrayList<>();
+    private List<String> labels = new ArrayList<>();
+
+    private List<String> associatedStates = new ArrayList<>();
+    private String actionOnViolation;
+    private String createdBy;
+    private String createdTime;
+    private String updatedBy;
+    private String updatedTime;
+
 }

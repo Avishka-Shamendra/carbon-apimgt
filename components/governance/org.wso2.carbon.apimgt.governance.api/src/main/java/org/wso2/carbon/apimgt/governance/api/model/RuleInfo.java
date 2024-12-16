@@ -18,19 +18,19 @@
 
 package org.wso2.carbon.apimgt.governance.api.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class GovernancePolicyInfo {
+/**
+ * This class represents a governance Rule Info
+ */
+public class RuleInfo {
     private String id;
     private String name;
     private String description;
-    private List<RulesetInfo> rulesets = new ArrayList<>();
-    private List<String> labels = new ArrayList<>();
-    private String createdBy;
-    private String createdTime;
-    private String updatedBy;
-    private String updatedTime;
+    private String appliesTo;
+    private List<String> paths;
+    private String severity;
+    private String provider;
 
     public String getId() {
         return id;
@@ -56,51 +56,35 @@ public class GovernancePolicyInfo {
         this.description = description;
     }
 
-    public List<RulesetInfo> getRulesets() {
-        return rulesets;
+    public String getAppliesTo() {
+        return appliesTo;
     }
 
-    public void setRulesets(List<RulesetInfo> rulesets) {
-        this.rulesets = rulesets;
+    public void setAppliesTo(String appliesTo) {
+        this.appliesTo = appliesTo;
     }
 
-    public List<String> getLabels() {
-        return labels;
+    public List<String> getPaths() {
+        return paths;
     }
 
-    public void setLabels(List<String> labels) {
-        this.labels = labels;
+    public void setPaths(List<String> paths) {
+        this.paths = paths;
     }
 
-    public String getCreatedBy() {
-        return createdBy;
+    public String getSeverity() {
+        return severity;
     }
 
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
+    public void setSeverity(String severity) {
+        this.severity = severity;
     }
 
-    public String getCreatedTime() {
-        return createdTime;
+    public String getProvider() {
+        return provider;
     }
 
-    public void setCreatedTime(String createdTime) {
-        this.createdTime = createdTime;
-    }
-
-    public String getUpdatedBy() {
-        return updatedBy;
-    }
-
-    public void setUpdatedBy(String updatedBy) {
-        this.updatedBy = updatedBy;
-    }
-
-    public String getUpdatedTime() {
-        return updatedTime;
-    }
-
-    public void setUpdatedTime(String updatedTime) {
-        this.updatedTime = updatedTime;
+    public void setProvider(String provider) {
+        this.provider = provider;
     }
 }

@@ -18,15 +18,21 @@
 
 package org.wso2.carbon.apimgt.governance.api.model;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class GovernancePolicyInfoWithRulesetIds {
+/**
+ * This class represents a governance Rule
+ */
+public class Rule {
     private String id;
     private String name;
     private String description;
-    private List<RulesetId> rulesets = new ArrayList<>();
-    private List<String> labels = new ArrayList<>();
+    private String appliesTo;
+    private List<String> paths;
+    private String severity;
+    private List<RuleContent> ruleContent;
+    private String message;
+    private String provider;
     private String createdBy;
     private String createdTime;
     private String updatedBy;
@@ -56,21 +62,52 @@ public class GovernancePolicyInfoWithRulesetIds {
         this.description = description;
     }
 
-    public List<RulesetId> getRulesets() {
-        return rulesets;
+    public String getAppliesTo() {
+        return appliesTo;
     }
 
-    public void addRuleset(RulesetId ruleset) {
-        this.rulesets.add(ruleset);
+    public void setAppliesTo(String appliesTo) {
+        this.appliesTo = appliesTo;
     }
 
-
-    public List<String> getLabels() {
-        return labels;
+    public List<String> getPaths() {
+        return paths;
     }
 
-    public void addLabel(String label) {
-        this.labels.add(label);
+    public void setPaths(List<String> paths) {
+        this.paths = paths;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(String severity) {
+        this.severity = severity;
+    }
+
+    public List<RuleContent> getRuleContent() {
+        return ruleContent;
+    }
+
+    public void setRuleContent(List<RuleContent> ruleContent) {
+        this.ruleContent = ruleContent;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
     }
 
     public String getCreatedBy() {
@@ -105,3 +142,4 @@ public class GovernancePolicyInfoWithRulesetIds {
         this.updatedTime = updatedTime;
     }
 }
+

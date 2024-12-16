@@ -18,14 +18,29 @@
 
 package org.wso2.carbon.apimgt.governance.api.model;
 
-public class RulesetId {
-    private String id;
+import java.util.ArrayList;
+import java.util.List;
 
-    public String getId() {
-        return id;
+/**
+ * This class represents a governance Rule List
+ */
+public class RuleList {
+    private Integer count;
+    private List<RuleInfo> rulesList = new ArrayList<>();
+
+    public Integer getCount() {
+        return count;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setCount(Integer count) {
+        this.count = count;
+    }
+
+    public List<RuleInfo> getRulesList() {
+        return rulesList;
+    }
+
+    public void setRulesList(List<RuleInfo> rulesList) {
+        this.rulesList = rulesList;
     }
 }

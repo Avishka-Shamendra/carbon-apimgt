@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.apimgt.governance.rest.api.mappings;
 
-import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicy;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyInfoWithRulesetIds;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyList;
 import org.wso2.carbon.apimgt.governance.api.model.RulesetId;
@@ -72,7 +72,7 @@ public class PolicyMappingUtil {
      * @return GovernancePolicyInfoDTO object
      */
     public static GovernancePolicyInfoDTO fromGovernancePolicyInfoToGovernancePolicyInfoDTO
-    (GovernancePolicyInfo governancePolicyInfo) {
+    (GovernancePolicy governancePolicyInfo) {
         GovernancePolicyInfoDTO governancePolicyInfoDTO = new GovernancePolicyInfoDTO();
         governancePolicyInfoDTO.setId(governancePolicyInfo.getId());
         governancePolicyInfoDTO.setName(governancePolicyInfo.getName());
@@ -84,7 +84,7 @@ public class PolicyMappingUtil {
         governancePolicyInfoDTO.setLabels(governancePolicyInfo.getLabels());
         List<RulesetInfoDTO> rulesetInfoDTOList = new ArrayList<>();
         for (RulesetInfo rulesetInfo : governancePolicyInfo.getRulesets()) {
-            rulesetInfoDTOList.add(RulesetMappingUtil.fromRulesetInfoToRulesetInfoDTO(rulesetInfo));
+            rulesetInfoDTOList.add(RuleMappingUtil.fromRulesetInfoToRulesetInfoDTO(rulesetInfo));
         }
         governancePolicyInfoDTO.setRulesets(rulesetInfoDTOList);
         return governancePolicyInfoDTO;
@@ -100,7 +100,7 @@ public class PolicyMappingUtil {
         GovernancePolicyListDTO policyListDTO = new GovernancePolicyListDTO();
         policyListDTO.setCount(policyList.getCount());
         List<GovernancePolicyInfoDTO> policyInfoDTOList = new ArrayList<>();
-        for (GovernancePolicyInfo policyInfo : policyList.getGovernancePolicyList()) {
+        for (GovernancePolicy policyInfo : policyList.getGovernancePolicyList()) {
             policyInfoDTOList.add(fromGovernancePolicyInfoToGovernancePolicyInfoDTO(policyInfo));
         }
         policyListDTO.setList(policyInfoDTOList);

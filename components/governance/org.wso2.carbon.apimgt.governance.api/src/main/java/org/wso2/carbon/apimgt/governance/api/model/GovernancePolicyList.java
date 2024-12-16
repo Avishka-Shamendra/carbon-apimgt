@@ -23,7 +23,7 @@ import java.util.List;
 
 public class GovernancePolicyList {
     private Integer count;
-    private List<GovernancePolicyInfo> governancePolicyList = new ArrayList<>();
+    private List<GovernancePolicy> governancePolicyList = new ArrayList<>();
 
     public Integer getCount() {
         return count;
@@ -33,11 +33,11 @@ public class GovernancePolicyList {
         this.count = count;
     }
 
-    public List<GovernancePolicyInfo> getGovernancePolicyList() {
+    public List<GovernancePolicy> getGovernancePolicyList() {
         return governancePolicyList;
     }
 
-    public void setGovernancePolicyList(List<GovernancePolicyInfo> governancePolicyList) {
+    public void setGovernancePolicyList(List<GovernancePolicy> governancePolicyList) {
         this.governancePolicyList = governancePolicyList;
     }
 }

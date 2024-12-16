@@ -6,11 +6,11 @@ import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.ArrayList;
 import java.util.List;
-import org.wso2.carbon.apimgt.governance.rest.api.dto.RulesetInfoDTO;
+import org.wso2.carbon.apimgt.governance.rest.api.dto.RuleInfoDTO;
 import javax.validation.constraints.*;
 
 /**
- * A list of rulesets.
+ * A list of rules.
  **/
 
 import io.swagger.annotations.*;
@@ -22,23 +22,23 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 import javax.validation.Valid;
 
-@ApiModel(description = "A list of rulesets.")
+@ApiModel(description = "A list of rules.")
 
-public class RulesetListDTO   {
+public class RulesListDTO   {
   
     private Integer count = null;
-    private List<RulesetInfoDTO> list = new ArrayList<RulesetInfoDTO>();
+    private List<RuleInfoDTO> list = new ArrayList<RuleInfoDTO>();
 
   /**
-   * Number of rulesets returned.
+   * Number of rules returned.
    **/
-  public RulesetListDTO count(Integer count) {
+  public RulesListDTO count(Integer count) {
     this.count = count;
     return this;
   }
 
   
-  @ApiModelProperty(example = "2", value = "Number of rulesets returned.")
+  @ApiModelProperty(example = "2", value = "Number of rules returned.")
   @JsonProperty("count")
   public Integer getCount() {
     return count;
@@ -48,21 +48,21 @@ public class RulesetListDTO   {
   }
 
   /**
-   * List of rulesets.
+   * List of rules.
    **/
-  public RulesetListDTO list(List<RulesetInfoDTO> list) {
+  public RulesListDTO list(List<RuleInfoDTO> list) {
     this.list = list;
     return this;
   }
 
   
-  @ApiModelProperty(value = "List of rulesets.")
+  @ApiModelProperty(value = "List of rules.")
       @Valid
   @JsonProperty("list")
-  public List<RulesetInfoDTO> getList() {
+  public List<RuleInfoDTO> getList() {
     return list;
   }
-  public void setList(List<RulesetInfoDTO> list) {
+  public void setList(List<RuleInfoDTO> list) {
     this.list = list;
   }
 
@@ -75,9 +75,9 @@ public class RulesetListDTO   {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    RulesetListDTO rulesetList = (RulesetListDTO) o;
-    return Objects.equals(count, rulesetList.count) &&
-        Objects.equals(list, rulesetList.list);
+    RulesListDTO rulesList = (RulesListDTO) o;
+    return Objects.equals(count, rulesList.count) &&
+        Objects.equals(list, rulesList.list);
   }
 
   @Override
@@ -88,7 +88,7 @@ public class RulesetListDTO   {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("class RulesetListDTO {\n");
+    sb.append("class RulesListDTO {\n");
     
     sb.append("    count: ").append(toIndentedString(count)).append("\n");
     sb.append("    list: ").append(toIndentedString(list)).append("\n");

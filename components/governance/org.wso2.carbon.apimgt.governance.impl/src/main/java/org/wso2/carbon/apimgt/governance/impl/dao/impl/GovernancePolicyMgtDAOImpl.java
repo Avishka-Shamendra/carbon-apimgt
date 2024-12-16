@@ -18,11 +18,9 @@
 
 package org.wso2.carbon.apimgt.governance.impl.dao.impl;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
-import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicy;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyInfoWithRulesetIds;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyList;
 import org.wso2.carbon.apimgt.governance.api.model.RulesetId;
@@ -73,7 +71,7 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
      * @return GovernancePolicyInfo Created object
      */
     @Override
-    public GovernancePolicyInfo createGovernancePolicy(String organization, GovernancePolicyInfoWithRulesetIds
+    public GovernancePolicy createGovernancePolicy(String organization, GovernancePolicyInfoWithRulesetIds
             governancePolicyInfoWithRulesetIds) throws GovernanceException {
         List<RulesetInfo> rulesetInfoList = new ArrayList<>();
         List<RulesetId> rulesetIds;
@@ -144,7 +142,7 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                         rulesetInfoList.add(rulesetInfo);
                     }
                 }
-                GovernancePolicyInfo governancePolicyInfo = new GovernancePolicyInfo();
+                GovernancePolicy governancePolicyInfo = new GovernancePolicy();
                 governancePolicyInfo.setId(governancePolicyInfoWithRulesetIds.getId());
                 governancePolicyInfo.setName(governancePolicyInfoWithRulesetIds.getName());
                 governancePolicyInfo.setDescription(governancePolicyInfoWithRulesetIds.getDescription());
@@ -178,15 +176,15 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
      * @throws GovernanceException If an error occurs while retrieving the policy
      */
     @Override
-    public GovernancePolicyInfo getGovernancePolicyByName(String organization, String policyName) throws GovernanceException {
-        GovernancePolicyInfo policyInfo = null;
+    public GovernancePolicy getGovernancePolicyByName(String organization, String policyName) throws GovernanceException {
+        GovernancePolicy policyInfo = null;
         try (Connection connection = GovernanceDBUtil.getConnection();
              PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.GET_POLICY_BY_NAME)) {
             prepStmt.setString(1, organization);
             prepStmt.setString(2, policyName);
             try (ResultSet resultSet = prepStmt.executeQuery()) {
                 if (resultSet.next()) {
-                    policyInfo = new GovernancePolicyInfo();
+                    policyInfo = new GovernancePolicy();
                     policyInfo.setId(resultSet.getString("POLICY_ID"));
                     policyInfo.setName(resultSet.getString("NAME"));
                     policyInfo.setDescription(resultSet.getString("DESCRIPTION"));
@@ -212,15 +210,15 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
      * @throws GovernanceException If an error occurs while retrieving the policy
      */
     @Override
-    public GovernancePolicyInfo getGovernancePolicyByID(String organization, String policyID) throws GovernanceException {
-        GovernancePolicyInfo policyInfo = null;
+    public GovernancePolicy getGovernancePolicyByID(String organization, String policyID) throws GovernanceException {
+        GovernancePolicy policyInfo = null;
         try (Connection connection = GovernanceDBUtil.getConnection();
              PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.GET_POLICY_BY_ID)) {
             prepStmt.setString(1, organization);
             prepStmt.setString(2, policyID);
             try (ResultSet resultSet = prepStmt.executeQuery()) {
                 if (resultSet.next()) {
-                    policyInfo = new GovernancePolicyInfo();
+                    policyInfo = new GovernancePolicy();
                     policyInfo.setId(resultSet.getString("POLICY_ID"));
                     policyInfo.setName(resultSet.getString("NAME"));
                     policyInfo.setDescription(resultSet.getString("DESCRIPTION"));
@@ -249,13 +247,13 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
     @Override
     public GovernancePolicyList getGovernancePolicies(String organization) throws GovernanceException {
         GovernancePolicyList policyList = new GovernancePolicyList();
-        List<GovernancePolicyInfo> policyInfoList = new ArrayList<>();
+        List<GovernancePolicy> policyInfoList = new ArrayList<>();
         try (Connection connection = GovernanceDBUtil.getConnection();
              PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.GET_POLICIES)) {
             prepStmt.setString(1, organization);
             try (ResultSet resultSet = prepStmt.executeQuery()) {
                 while (resultSet.next()) {
-                    GovernancePolicyInfo policyInfo = new GovernancePolicyInfo();
+                    GovernancePolicy policyInfo = new GovernancePolicy();
                     policyInfo.setId(resultSet.getString("POLICY_ID"));
                     policyInfo.setName(resultSet.getString("NAME"));
                     policyInfo.setDescription(resultSet.getString("DESCRIPTION"));
@@ -320,7 +318,7 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
      * @throws GovernanceException If an error occurs while updating the policy
      */
     @Override
-    public GovernancePolicyInfo updateGovernancePolicy(String policyId, String organization, GovernancePolicyInfoWithRulesetIds governancePolicyInfoWithRulesetIds) throws GovernanceException {
+    public GovernancePolicy updateGovernancePolicy(String policyId, String organization, GovernancePolicyInfoWithRulesetIds governancePolicyInfoWithRulesetIds) throws GovernanceException {
         try (Connection connection = GovernanceDBUtil.getConnection()) {
             connection.setAutoCommit(false);
             try {
@@ -449,7 +447,7 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                     }
                 }
                 // Create and return GovernancePolicyInfo object
-                GovernancePolicyInfo governancePolicyInfo = new GovernancePolicyInfo();
+                GovernancePolicy governancePolicyInfo = new GovernancePolicy();
                 governancePolicyInfo.setId(policyId);
                 governancePolicyInfo.setName(governancePolicyInfoWithRulesetIds.getName());
                 governancePolicyInfo.setDescription(governancePolicyInfoWithRulesetIds.getDescription());

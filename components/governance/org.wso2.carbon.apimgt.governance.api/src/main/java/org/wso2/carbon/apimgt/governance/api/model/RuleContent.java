@@ -18,30 +18,28 @@
 
 package org.wso2.carbon.apimgt.governance.api.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 /**
- * This class represents a list of governance Rulesets
+ * This class represents a governance Rule Content
  */
-public class RulesetList {
-    private Integer count;
+public class RuleContent {
+    private String function;
+    private Map<String, Object> parameters;
 
-    private List<RulesetInfo> rulesetList = new ArrayList<>();
-
-    public Integer getCount() {
-        return count;
+    public String getFunction() {
+        return function;
     }
 
-    public void setCount(Integer count) {
-        this.count = count;
+    public void setFunction(String function) {
+        this.function = function;
     }
 
-    public List<RulesetInfo> getRulesetList() {
-        return rulesetList;
+    public Map<String, Object> getParameters() {
+        return parameters;
     }
 
-    public void setRulesetList(List<RulesetInfo> rulesetList) {
-        this.rulesetList = rulesetList;
+    public void setParameters(Map<String, Object> parameters) {
+        this.parameters = parameters;
     }
 }

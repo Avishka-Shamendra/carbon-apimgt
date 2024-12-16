@@ -21,7 +21,7 @@ package org.wso2.carbon.apimgt.governance.impl;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.manager.PolicyManager;
-import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicy;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyInfoWithRulesetIds;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyList;
 import org.wso2.carbon.apimgt.governance.impl.dao.GovernancePolicyMgtDAO;
@@ -48,7 +48,7 @@ public class PolicyManagerImpl implements PolicyManager {
      * @throws GovernanceException If an error occurs while creating the policy
      */
     @Override
-    public GovernancePolicyInfo createGovernancePolicy(String organization, GovernancePolicyInfoWithRulesetIds
+    public GovernancePolicy createGovernancePolicy(String organization, GovernancePolicyInfoWithRulesetIds
             governancePolicyInfoWithRulesetIds) throws GovernanceException {
         governancePolicyInfoWithRulesetIds.setId(GovernanceUtil.generateUUID());
         return policyMgtDAO.createGovernancePolicy(organization, governancePolicyInfoWithRulesetIds);
@@ -63,8 +63,8 @@ public class PolicyManagerImpl implements PolicyManager {
      * @throws GovernanceException If an error occurs while retrieving the policy
      */
     @Override
-    public GovernancePolicyInfo getGovernancePolicyByID(String organization, String policyID) throws GovernanceException {
-        GovernancePolicyInfo policyInfo = policyMgtDAO.getGovernancePolicyByID(organization, policyID);
+    public GovernancePolicy getGovernancePolicyByID(String organization, String policyID) throws GovernanceException {
+        GovernancePolicy policyInfo = policyMgtDAO.getGovernancePolicyByID(organization, policyID);
         if (policyInfo == null) {
             throw new GovernanceException(GovernanceExceptionCodes.POLICY_NOT_FOUND, policyID, organization);
         }
@@ -105,8 +105,8 @@ public class PolicyManagerImpl implements PolicyManager {
      * @throws GovernanceException If an error occurs while updating the policy
      */
     @Override
-    public GovernancePolicyInfo updateGovernancePolicy(String policyId, String organization,
-                                                       GovernancePolicyInfoWithRulesetIds governancePolicyInfoWithRulesetIds)
+    public GovernancePolicy updateGovernancePolicy(String policyId, String organization,
+                                                   GovernancePolicyInfoWithRulesetIds governancePolicyInfoWithRulesetIds)
             throws GovernanceException {
         return policyMgtDAO.updateGovernancePolicy(policyId, organization, governancePolicyInfoWithRulesetIds);
     }
