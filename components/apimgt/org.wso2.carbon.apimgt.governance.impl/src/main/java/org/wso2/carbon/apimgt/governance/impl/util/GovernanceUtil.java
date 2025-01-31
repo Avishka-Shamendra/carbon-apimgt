@@ -21,12 +21,8 @@ package org.wso2.carbon.apimgt.governance.impl.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import feign.Response;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.apimgt.api.model.APIStatus;
 import org.wso2.carbon.apimgt.governance.api.PolicyManager;
 import org.wso2.carbon.apimgt.governance.api.RulesetManager;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
@@ -42,24 +38,23 @@ import org.wso2.carbon.apimgt.governance.api.model.RulesetList;
 import org.wso2.carbon.apimgt.governance.impl.GovernanceConstants;
 import org.wso2.carbon.apimgt.governance.impl.PolicyManagerImpl;
 import org.wso2.carbon.apimgt.governance.impl.RulesetManagerImpl;
+import org.wso2.carbon.apimgt.governance.impl.dao.ComplianceMgtDAO;
+import org.wso2.carbon.apimgt.governance.impl.dao.impl.ComplianceMgtDAOImpl;
 import org.wso2.carbon.utils.CarbonUtils;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 /**
  * This class contains utility methods for Governance
@@ -185,104 +180,9 @@ public class GovernanceUtil {
         ruleset.setRuleType(RuleType.fromString(defaultRuleset.getRuleType()));
         ruleset.setArtifactType(ArtifactType.fromString(defaultRuleset.getArtifactType()));
         ruleset.setProvider(defaultRuleset.getProvider());
-        ruleset.setRulesetContent(defaultRuleset.getRulesetContentAsInputStream());
+        ruleset.setRulesetContent(defaultRuleset.getRulesetContentString());
         ruleset.setDocumentationLink(defaultRuleset.getDocumentationLink());
         return ruleset;
-    }
-
-    /**
-     * Get response bytes if present
-     *
-     * @param response Response
-     * @return byte[]
-     */
-    public static byte[] getResponseBytesIfPresent(Response response) {
-        byte[] responseBytes = new byte[0];
-        try {
-            if (response.body() != null) {
-                return IOUtils.toByteArray(response.body().asInputStream());
-            }
-        } catch (IOException e) {
-            //Log and continue. Response is read only for logging purposes. We don't need to break the flow.
-            log.error("Error while reading response from dependent component", e);
-        }
-        return responseBytes;
-    }
-
-    /**
-     * Get encoded log
-     *
-     * @param requestBody    Request body
-     * @param requestMethod  Request method
-     * @param requestUrl     Request URL
-     * @param responseStatus Response status
-     * @param responseBody   Response body
-     * @param traceId        Trace ID
-     * @return Encoded log
-     */
-    public static String getEncodedLog(byte[] requestBody, String requestMethod, String requestUrl,
-                                       int responseStatus, byte[] responseBody, String traceId) {
-        String requestStrBase64 = "<empty>";
-        String responseStrBase64 = "<empty>";
-        if (requestBody != null && requestBody.length != 0) {
-            requestStrBase64 = new String(Base64.encodeBase64(requestBody));
-        }
-        if (responseBody != null && responseBody.length != 0) {
-            responseStrBase64 = new String(Base64.encodeBase64(responseBody));
-        }
-        return "{" +
-                "\"status\": \"" + responseStatus + "\", " +
-                "\"responseBody\": \"" + responseStrBase64 + "\", " +
-                "\"requestUrl\": \"" + requestMethod + " " + requestUrl + "\", " +
-                "\"requestBody\": \"" + requestStrBase64 + "\", " +
-                "\"traceId\": \"" + traceId + "\"" +
-                "}";
-    }
-
-    /**
-     * Get Swagger file from zip
-     *
-     * @param zipContent Zip content
-     * @param apiId      api ID
-     * @return Swagger file content
-     * @throws GovernanceException if an error occurs while extracting swagger content
-     */
-    public static String getSwaggerFileFromZip(byte[] zipContent, String apiId) throws GovernanceException {
-        String swaggerContent = null;
-        try (ZipInputStream zipInputStream = new ZipInputStream(new ByteArrayInputStream(zipContent))) {
-            ZipEntry entry;
-            while ((entry = zipInputStream.getNextEntry()) != null) {
-                if (entry.getName().contains(GovernanceConstants.DEFINITIONS_FOLDER
-                        + GovernanceConstants.SWAGGER_FILE_NAME)) {
-                    // Read all bytes from the ZipInputStream
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    byte[] buffer = new byte[1024];
-                    int length;
-                    while ((length = zipInputStream.read(buffer)) != -1) {
-                        outputStream.write(buffer, 0, length);
-                    }
-                    // Convert the byte array to string
-                    swaggerContent = new String(outputStream.toByteArray(), StandardCharsets.UTF_8);
-                    return swaggerContent;
-                }
-            }
-        } catch (IOException e) {
-            throw new GovernanceException(GovernanceExceptionCodes.
-                    ERROR_WHILE_EXTRACTING_SWAGGER_CONTENT, apiId);
-        }
-        return null;
-    }
-
-    /**
-     * Get byte array from input stream
-     *
-     * @param is InputStream
-     * @return byte[]
-     * @throws IOException if an error occurs while converting input stream to byte array
-     */
-    public static byte[] toByteArray(InputStream is) throws IOException {
-
-        return IOUtils.toByteArray(is);
     }
 
     /**
@@ -299,45 +199,135 @@ public class GovernanceUtil {
         try {
             rulesetMap = yamlReader.readValue(content, Map.class);
         } catch (JsonProcessingException e) {
-            throw new GovernanceException(GovernanceExceptionCodes.ERROR_FAILED_TO_PARSE_RULESET_CONETENT, e);
+            throw new GovernanceException(GovernanceExceptionCodes.ERROR_FAILED_TO_PARSE_RULESET_CONTENT, e);
         }
         return rulesetMap;
     }
 
-
     /**
-     * Get string content from input stream
+     * Get labels for an artifact
      *
-     * @param inputStream InputStream
-     * @return String
-     * @throws GovernanceException if an error occurs while reading content from input stream
+     * @param artifactId   Artifact ID
+     * @param artifactType Artifact Type
+     * @return List of label IDs
      */
-    public static String getStringContentFromInputStream(InputStream inputStream) throws GovernanceException {
-        try {
-            return IOUtils.toString(inputStream, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new GovernanceException("Error while reading content from input stream", e);
+    public static List<String> getLabelsForArtifact(String artifactId, ArtifactType artifactType)
+            throws GovernanceException {
+        List<String> labels = new ArrayList<>();
+        if (ArtifactType.isArtifactAPI(artifactType)) {
+            labels = APIMUtil.getLabelIDsForAPI(artifactId);
         }
+        return labels;
     }
 
     /**
-     * Get all applicable policy IDs for an artifact
+     * Get all artifacts for a given artifact type
+     *
+     * @param artifactType Artifact Type
+     * @param organization Organization
+     * @return List of artifact IDs
+     * @throws GovernanceException If an error occurs while getting the list of artifacts
+     */
+    public static List<String> getAllArtifacts(ArtifactType artifactType, String organization)
+            throws GovernanceException {
+        if (ArtifactType.isArtifactAPI(artifactType)) {
+            return APIMUtil.getAllAPIs(organization);
+        }
+        return new ArrayList<>();
+    }
+
+    /**
+     * Get artifacts for a label as a map of Artifact Type, List of Artifact IDs
+     *
+     * @param labelId Label ID
+     * @return Map of Artifact Type, List of Artifact IDs
+     */
+    public static Map<ArtifactType, List<String>> getArtifactsForLabel(String labelId) throws GovernanceException {
+        Map<ArtifactType, List<String>> artifacts = new HashMap<>();
+        Map<String, List<String>> apiIds = APIMUtil.getAPIsByLabel(labelId);
+        for (Map.Entry<String, List<String>> entry : apiIds.entrySet()) {
+            ArtifactType artifactType = APIMUtil.getArtifactTypeForAPIType(entry.getKey());
+            if (artifactType != null) {
+                artifacts.put(artifactType, entry.getValue());
+            }
+        }
+        return artifacts;
+    }
+
+
+    /**
+     * Get all artifacts for a given artifact type
+     *
+     * @param organization Organization
+     * @return Map of Artifact Type, List of Artifact IDs
+     * @throws GovernanceException If an error occurs while getting the list of artifacts
+     */
+    public static Map<ArtifactType, List<String>> getAllArtifactsMap(String organization) throws GovernanceException {
+        Map<ArtifactType, List<String>> artifacts = new HashMap<>();
+
+        // Get all API Artifacts
+        Map<String, List<String>> artifactsMap = APIMUtil.getAllAPIsByAPIType(organization);
+        for (Map.Entry<String, List<String>> entry : artifactsMap.entrySet()) {
+            ArtifactType artifactType = APIMUtil.getArtifactTypeForAPIType(entry.getKey());
+            if (artifactType != null) {
+                artifacts.put(artifactType, entry.getValue());
+            }
+        }
+
+        return artifacts;
+    }
+
+    /**
+     * Get applicable policies for an artifact
+     *
+     * @param artifactId   Artifact ID
+     * @param artifactType Artifact Type
+     * @param organization Organization
+     * @return Map of Policy IDs, Policy Names
+     */
+    public static Map<String, String> getApplicablePoliciesForArtifact(String artifactId,
+                                                                       ArtifactType artifactType,
+                                                                       String organization) throws GovernanceException {
+
+        List<String> labels = GovernanceUtil.getLabelsForArtifact(artifactId, artifactType);
+        PolicyManager policyManager = new PolicyManagerImpl();
+
+        Map<String, String> policies = new HashMap<>();
+        for (String label : labels) {
+            Map<String, String> policiesForLabel = policyManager.getPoliciesByLabel(label, organization);
+            if (policiesForLabel != null) {
+                policies.putAll(policiesForLabel);
+            }
+        }
+
+        policies.putAll(policyManager.getOrganizationWidePolicies(organization));
+
+        return policies; // Return a map of policy IDs and policy names
+    }
+
+
+    /**
+     * Get all applicable policy IDs for an artifact given a specific state at which
+     * the artifact should be governed
      *
      * @param artifactId      Artifact ID
+     * @param artifactType    Artifact Type
      * @param governableState Governable state (The state at which the artifact should be governed)
      * @param organization    Organization
-     * @return List of applicable policy IDS
+     * @return List of applicable policy IDs
      * @throws GovernanceException if an error occurs while checking for applicable policies
      */
-    public static List<String> getApplicableGovPoliciesForArtifact(String artifactId,
-                                                                   GovernableState governableState,
-                                                                   String organization) throws GovernanceException {
+    public static List<String> getApplicablePoliciesForArtifactWithState(String artifactId,
+                                                                         ArtifactType artifactType,
+                                                                         GovernableState governableState,
+                                                                         String organization)
+            throws GovernanceException {
 
-        List<String> labels = new ArrayList<>(); // TODO: Get labels from APIM
+        List<String> labels = GovernanceUtil.getLabelsForArtifact(artifactId, artifactType);
         PolicyManager policyManager = new PolicyManagerImpl();
 
         // Check for policies using labels and the state
-        List<String> policies = new ArrayList<>();
+        Set<String> policies = new HashSet<>();
         for (String label : labels) {
             // Get policies for the label and state
             List<String> policiesForLabel = policyManager.getPoliciesByLabelAndState(label,
@@ -350,8 +340,7 @@ public class GovernanceUtil {
         policies.addAll(policyManager.getOrganizationWidePoliciesByState(governableState,
                 organization));
 
-        return policies;
-
+        return new ArrayList<>(policies);
     }
 
     /**
@@ -375,44 +364,124 @@ public class GovernanceUtil {
         return isBlocking;
     }
 
-
     /**
-     * Get governable states for artifact
+     * Check if an artifact is available
      *
      * @param artifactId   Artifact ID
      * @param artifactType Artifact Type
-     * @return List of Governable States
-     * @throws GovernanceException If an exception occurs
+     * @return boolean
      */
-    public List<GovernableState> getGovernableStatesForArtifact(String artifactId,
-                                                                ArtifactType artifactType)
-            throws GovernanceException {
-        List<GovernableState> governableStates = new ArrayList<>();
-        String artifactTypeStr = String.valueOf(artifactType);
+    public static boolean isArtifactAvailable(String artifactId, ArtifactType artifactType) {
+        artifactType = artifactType != null ? artifactType : ArtifactType.API;
+        
+        boolean isArtifactAPI = ArtifactType.isArtifactAPI(artifactType);
 
-        if (artifactTypeStr.contains("API")) {
-
-            // Every created api should be governed with create and update policies
-            governableStates.add(GovernableState.API_CREATE);
-            governableStates.add(GovernableState.API_UPDATE);
-
-            if (APIMUtil.isAPIDeployed(artifactId)) {
-                // If the API is deployed, it should be governed with the deploy policy
-                governableStates.add(GovernableState.API_DEPLOY);
-            }
-
-            String status = APIMUtil.getAPIStatus(artifactId);
-            if (APIStatus.PUBLISHED.getStatus().equals(status)
-                    || APIStatus.DEPRECATED.getStatus().equals(status)
-                    || APIStatus.BLOCKED.getStatus().equals(status)) {
-                // If the API is published, deprecated or blocked, it should be governed with the publish policy
-                // as API has already been published
-                governableStates.add(GovernableState.API_PUBLISH);
-            }
+        // Check if artifact exists in APIM
+        boolean artifactExists = false;
+        if (isArtifactAPI) {
+            artifactExists = APIMUtil.isAPIExist(artifactId);
         }
+        return artifactExists;
+    }
 
-        return governableStates;
+    /**
+     * Get artifact type
+     *
+     * @param artifactId Artifact ID
+     * @return ArtifactType
+     */
+    public static ArtifactType getArtifactType(String artifactId) throws GovernanceException {
+        ComplianceMgtDAO complianceMgtDAO = ComplianceMgtDAOImpl.getInstance();
+        return complianceMgtDAO.getArtifactInfo(artifactId).getArtifactType();
+    }
 
+    /**
+     * Get parent artifact type from a given artifact ID (API or not)
+     *
+     * @param artifactId Artifact ID
+     * @return ArtifactType
+     */
+    public static ArtifactType getParentArtifactType(String artifactId) throws GovernanceException {
+        ArtifactType artifactType = getArtifactType(artifactId);
+        if (ArtifactType.isArtifactAPI(artifactType)) {
+            return ArtifactType.API;
+        }
+        return null;
+    }
+
+    /**
+     * Get artifact name
+     *
+     * @param artifactId   Artifact ID
+     * @param artifactType Artifact Type
+     * @return String
+     * @throws GovernanceException If an error occurs while getting the artifact name
+     */
+    public static String getArtifactName(String artifactId, ArtifactType artifactType)
+            throws GovernanceException {
+        String artifactName = null;
+        if (ArtifactType.isArtifactAPI(artifactType)) {
+            artifactName = APIMUtil.getAPINameCombinedWithVersion(artifactId);
+        }
+        return artifactName;
+    }
+
+    /**
+     * Get artifact project
+     *
+     * @param artifactId   Artifact ID
+     * @param revisionNo   Revision Number
+     * @param artifactType Artifact Type
+     * @param organization Organization
+     * @return byte[]
+     * @throws GovernanceException If an error occurs while getting the artifact project
+     */
+    public static byte[] getArtifactProjectWithRevision(String artifactId, String revisionNo,
+                                                        ArtifactType artifactType,
+                                                        String organization) throws GovernanceException {
+        boolean isArtifactAPI = ArtifactType.isArtifactAPI(artifactType);
+
+        // Get artifact project from APIM
+        byte[] artifactProject = null;
+        if (isArtifactAPI) {
+            artifactProject =
+                    APIMUtil.getAPIProject(artifactId, revisionNo, organization);
+        }
+        return artifactProject;
+    }
+
+    /**
+     * Get artifact project
+     *
+     * @param artifactId   Artifact ID
+     * @param artifactType Artifact Type
+     * @param organization Organization
+     * @return byte[]
+     * @throws GovernanceException If an error occurs while getting the artifact project
+     */
+    public static byte[] getArtifactProject(String artifactId, ArtifactType artifactType,
+                                            String organization) throws GovernanceException {
+
+        return getArtifactProjectWithRevision(artifactId, null, artifactType, organization);
+    }
+
+    /**
+     * Get artifact id from artifact name, version, type and organization
+     *
+     * @param artifactName    Artifact name
+     * @param artifactVersion Artifact version
+     * @param artifactType    Artifact type
+     * @param organization    Organization
+     * @return Artifact ID
+     * @throws GovernanceException If an error occurs while getting the artifact ID
+     */
+    public static String getArtifactId(String artifactName, String artifactVersion, ArtifactType artifactType,
+                                       String organization) throws GovernanceException {
+
+        if (ArtifactType.isArtifactAPI(artifactType)) {
+            return APIMUtil.getApiUUID(artifactName, artifactVersion, organization);
+        }
+        return null;
     }
 
 }

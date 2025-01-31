@@ -10258,6 +10258,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AdditionalProperty'
+        permissions:
+          type: object
+          properties:
+            permissionType:
+              type: string
+              example: ALLOW
+              default: PUBLIC
+              enum:
+                - PUBLIC
+                - ALLOW
+                - DENY
+            roles:
+              type: array
+              items:
+                type: string
+                example: Internal/everyone
     EnvironmentList:
       title: Environment List
       type: object
@@ -12093,9 +12109,7 @@ components:
       name: apiId
       in: query
       description: |
-        **API ID** consisting of the **UUID** of the API.
-        The combination of the provider of the API, name of the API and the version is also accepted as a valid API I.
-        Should be formatted as **provider-name-version**.
+        **API ID** consisting of the **UUID** of the API**.
       required: true
       schema:
         type: string

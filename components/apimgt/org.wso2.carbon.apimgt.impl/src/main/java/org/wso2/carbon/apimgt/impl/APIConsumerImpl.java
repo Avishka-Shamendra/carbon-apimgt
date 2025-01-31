@@ -72,7 +72,6 @@ import org.wso2.carbon.apimgt.api.model.Identifier;
 import org.wso2.carbon.apimgt.api.model.KeyManager;
 import org.wso2.carbon.apimgt.api.model.KeyManagerApplicationInfo;
 import org.wso2.carbon.apimgt.api.model.KeyManagerConfiguration;
-import org.wso2.carbon.apimgt.api.model.Label;
 import org.wso2.carbon.apimgt.api.model.Monetization;
 import org.wso2.carbon.apimgt.api.model.OAuthAppRequest;
 import org.wso2.carbon.apimgt.api.model.OAuthApplicationInfo;
@@ -194,9 +193,6 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
     public static final String API_NAME = "apiName";
     public static final String API_VERSION = "apiVersion";
     public static final String API_PROVIDER = "apiProvider";
-    private static final String PERMISSION_ALLOW = "ALLOW";
-    private static final String PERMISSION_DENY = "DENY";
-    private static final String PERMISSION_NOT_RESTRICTED = "PUBLIC";
     private static final String PRESERVED_CASE_SENSITIVE_VARIABLE = "preservedCaseSensitive";
 
     private static final String GET_SUB_WORKFLOW_REF_FAILED = "Failed to get external workflow reference for " +
@@ -214,6 +210,8 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
     private volatile long lastUpdatedTime;
     private final Object tagCacheMutex = new Object();
     protected String userNameWithoutChange;
+
+    boolean orgWideAppUpdateEnabled = Boolean.getBoolean(APIConstants.ORGANIZATION_WIDE_APPLICATION_UPDATE_ENABLED);
 
     public APIConsumerImpl() throws APIManagementException {
 
@@ -1790,7 +1788,7 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
             isUserAppOwner = application.getSubscriber().getName().equals(existingApp.getSubscriber().getName());
         }
 
-        if (!isUserAppOwner) {
+        if (!orgWideAppUpdateEnabled && !isUserAppOwner) {
             throw new APIManagementException("user: " + application.getSubscriber().getName() + ", " +
                     "attempted to update application owned by: " + existingApp.getSubscriber().getName());
         }
@@ -1982,7 +1980,7 @@ public class APIConsumerImpl extends AbstractAPIManager implements APIConsumer {
             isUserAppOwner = application.getSubscriber().getName().equals(username);
         }
 
-        if (!isUserAppOwner) {
+        if (!orgWideAppUpdateEnabled && !isUserAppOwner) {
             throw new APIManagementException("user: " + username + ", " + "attempted to remove application owned by: "
                     + application.getSubscriber().getName());
         }
@@ -2356,7 +2354,7 @@ APIConstants.AuditLogConstants.DELETED, this.username);
                 isUserAppOwner = application.getSubscriber().getName().equals(userId);
             }
 
-            if (!isUserAppOwner) {
+            if (!orgWideAppUpdateEnabled && !isUserAppOwner) {
                 throw new APIManagementException("user: " + application.getSubscriber().getName() + ", " +
                         "attempted to generate tokens for application owned by: " + userId);
             }
@@ -2382,7 +2380,7 @@ APIConstants.AuditLogConstants.DELETED, this.username);
             } else {
                 throw new APIManagementException("Invalid Token Type '" + tokenType + "' requested.");
             }
-            
+
             if (appRegistrationWorkflow == null ) {
                 appRegistrationWorkflow = new ApplicationRegistrationSimpleWorkflowExecutor();
             }
@@ -2856,7 +2854,7 @@ APIConstants.AuditLogConstants.DELETED, this.username);
                 isUserAppOwner = subscriberName.equals(userId);
             }
 
-            if (!isUserAppOwner) {
+            if (!orgWideAppUpdateEnabled && !isUserAppOwner) {
                 throw new APIManagementException("user: " + userId + ", attempted to update OAuth application " +
                         "owned by: " + subscriberName);
             }
@@ -3383,7 +3381,13 @@ APIConstants.AuditLogConstants.DELETED, this.username);
     public String getOpenAPIDefinitionForEnvironment(API api, String environmentName)
             throws APIManagementException {
 
-        return getOpenAPIDefinitionForDeployment(api, environmentName);
+        return getOpenAPIDefinitionForDeployment(api, environmentName, null);
+    }
+
+    @Override
+    public String getOpenAPIDefinitionForEnvironmentByKm(API api, String environmentName, String kmId)
+            throws APIManagementException {
+        return getOpenAPIDefinitionForDeployment(api, environmentName, kmId);
     }
 
     public void revokeAPIKey(String apiKey, long expiryTime, String tenantDomain) throws APIManagementException {
@@ -3412,7 +3416,7 @@ APIConstants.AuditLogConstants.DELETED, this.username);
      * @return Updated Open API definition
      * @throws APIManagementException
      */
-    private String getOpenAPIDefinitionForDeployment(API api, String environmentName)
+    private String getOpenAPIDefinitionForDeployment(API api, String environmentName, String kmId)
             throws APIManagementException {
 
         String apiTenantDomain;
@@ -3431,7 +3435,7 @@ APIConstants.AuditLogConstants.DELETED, this.username);
                 APIUtil.replaceEmailDomainBack(api.getId().getProviderName()));
         hostsWithSchemes = getHostWithSchemeMappingForEnvironment(api, apiTenantDomain, environmentName);
         api.setContext(getBasePath(apiTenantDomain, api.getContext()));
-        updatedDefinition = oasParser.getOASDefinitionForStore(api, definition, hostsWithSchemes);
+        updatedDefinition = oasParser.getOASDefinitionForStore(api, definition, hostsWithSchemes, kmId);
         return updatedDefinition;
     }
 
@@ -3832,8 +3836,8 @@ APIConstants.AuditLogConstants.DELETED, this.username);
     }
 
     @Override
-    public Map<String, Object> searchPaginatedAPIs(String searchQuery, String organization, int start, int end,
-                                                   String sortBy, String sortOrder) throws APIManagementException {
+    public Map<String, Object> searchPaginatedAPIs(String searchQuery, String organization, int start, int end)
+            throws APIManagementException {
 
         Map<String, Object> result = new HashMap<String, Object>();
         if (log.isDebugEnabled()) {
@@ -3900,7 +3904,8 @@ APIConstants.AuditLogConstants.DELETED, this.username);
                     uuid);
             if (devPortalApi != null) {
                 checkVisibilityPermission(userNameWithoutChange, devPortalApi.getVisibility(),
-                        devPortalApi.getVisibleRoles());
+                        devPortalApi.getVisibleRoles(), devPortalApi.getPublisherAccessControl(),
+                        devPortalApi.getPublisherAccessControlRoles());
                 if (APIConstants.API_PRODUCT.equalsIgnoreCase(devPortalApi.getType())) {
                     APIProduct apiProduct = APIMapper.INSTANCE.toApiProduct(devPortalApi);
                     apiProduct.setID(new APIProductIdentifier(devPortalApi.getProviderName(),
@@ -3929,7 +3934,8 @@ APIConstants.AuditLogConstants.DELETED, this.username);
         }
     }
 
-    protected void checkVisibilityPermission(String userNameWithTenantDomain, String visibility, String visibilityRoles)
+    protected void checkVisibilityPermission(String userNameWithTenantDomain, String visibility, String visibilityRoles,
+                                             String publisherAccessControl, String publisherAccessControlRoles)
             throws APIManagementException {
 
         if (visibility == null || visibility.trim().isEmpty()
@@ -3939,10 +3945,38 @@ APIConstants.AuditLogConstants.DELETED, this.username);
             }
             return;
         }
-        if (APIUtil.hasPermission(userNameWithTenantDomain, APIConstants.Permissions.APIM_ADMIN)
-                || APIUtil.hasPermission(userNameWithTenantDomain, APIConstants.Permissions.API_CREATE)
-                || APIUtil.hasPermission(userNameWithTenantDomain, APIConstants.Permissions.API_PUBLISH)) {
+        if (APIUtil.hasPermission(userNameWithTenantDomain, APIConstants.Permissions.APIM_ADMIN)) {
             return;
+        }
+        if (APIUtil.hasPermission(userNameWithTenantDomain, APIConstants.Permissions.API_CREATE)
+                || APIUtil.hasPermission(userNameWithTenantDomain, APIConstants.Permissions.API_PUBLISH)) {
+            if (publisherAccessControl == null || publisherAccessControl.trim().isEmpty()
+                    || publisherAccessControl.equalsIgnoreCase(APIConstants.NO_ACCESS_CONTROL)) {
+                // If the API has not been restricted with publisher access control, the API will be visible to all
+                // creators and publishers irrespective of devportal visibility restrictions.
+                return;
+            } else {
+                // If the API has been restricted with publisher access control, the API will be visible to creators
+                // and publishers having the roles which has been specified under publisher access control irrespective
+                // of devportal visibility restrictions.
+                if (publisherAccessControlRoles != null && !publisherAccessControlRoles.trim().isEmpty()) {
+                    String[] accessControlRoleList = publisherAccessControlRoles.replaceAll("\\s+", "").split(",");
+                    if (log.isDebugEnabled()) {
+                        log.debug("API has restricted access to creators and publishers with the roles : "
+                                + Arrays.toString(accessControlRoleList));
+                    }
+                    String[] userRoleList = APIUtil.getListOfRoles(userNameWithTenantDomain);
+                    if (log.isDebugEnabled()) {
+                        log.debug("User " + username + " has roles " + Arrays.toString(userRoleList));
+                    }
+                    for (String role : accessControlRoleList) {
+                        if (!role.equalsIgnoreCase(APIConstants.NULL_USER_ROLE_LIST)
+                                && APIUtil.compareRoleList(userRoleList, role)) {
+                            return;
+                        }
+                    }
+                }
+            }
         }
 
         if (visibilityRoles != null && !visibilityRoles.trim().isEmpty()) {
@@ -4026,16 +4060,13 @@ APIConstants.AuditLogConstants.DELETED, this.username);
             DevPortalAPI devPortalApi = apiPersistenceInstance.getDevPortalAPI(org, uuid);
             if (devPortalApi != null) {
                 checkVisibilityPermission(userNameWithoutChange, devPortalApi.getVisibility(),
-                        devPortalApi.getVisibleRoles());
+                        devPortalApi.getVisibleRoles(), devPortalApi.getPublisherAccessControl(),
+                        devPortalApi.getPublisherAccessControlRoles());
                 API api = APIMapper.INSTANCE.toApi(devPortalApi);
 
-                /// populate relavant external info
-                // environment
-                String environmentString = null;
-                if (api.getEnvironments() != null) {
-                    environmentString = String.join(",", api.getEnvironments());
-                }
-                api.setEnvironments(APIUtil.extractEnvironmentsForAPI(environmentString, organization));
+                // populate relevant external info environment
+                Map<String, Environment> environments = getGatewayEnvironmentsByOrganization(organization, username);
+                api.setEnvironments(APIUtil.extractEnvironmentsForAPI(environments.toString(), organization));
                 //CORS . if null is returned, set default config from the configuration
                 if (api.getCorsConfiguration() == null) {
                     api.setCorsConfiguration(APIUtil.getDefaultCorsConfiguration());
@@ -4260,7 +4291,8 @@ APIConstants.AuditLogConstants.DELETED, this.username);
         try {
             DevPortalAPI api = apiPersistenceInstance.getDevPortalAPI(new Organization(organization), apiId);
             if (api != null) {
-                checkVisibilityPermission(userNameWithoutChange, api.getVisibility(), api.getVisibleRoles());
+                checkVisibilityPermission(userNameWithoutChange, api.getVisibility(), api.getVisibleRoles(),
+                        api.getPublisherAccessControl(), api.getPublisherAccessControlRoles());
             }
         } catch (APIPersistenceException e) {
             throw new APIManagementException("Error while accessing dev portal API", e);
@@ -4298,8 +4330,6 @@ APIConstants.AuditLogConstants.DELETED, this.username);
 
     @Override
     public String getAsyncAPIDefinitionForLabel(Identifier apiId, String labelName) throws APIManagementException {
-
-        List<Label> gatewayLabels;
         String updatedDefinition = null;
         Map<String, String> hostsWithSchemes;
         // TODO:
@@ -4467,43 +4497,6 @@ APIConstants.AuditLogConstants.DELETED, this.username);
     }
 
     /**
-     * Get gateway host names with transport scheme mapping.
-     *
-     * @param gatewayLabels gateway label list
-     * @param labelName     Label name
-     * @return Hostname with transport schemes
-     * @throws APIManagementException If an error occurs when getting gateway host names.
-     */
-    private Map<String, String> getHostWithSchemeMappingForLabelWS(List<Label> gatewayLabels, String labelName)
-            throws APIManagementException {
-
-        Map<String, String> hostsWithSchemes = new HashMap<>();
-        Label labelObj = null;
-        for (Label label : gatewayLabels) {
-            if (label.getName().equals(labelName)) {
-                labelObj = label;
-                break;
-            }
-        }
-        if (labelObj == null) {
-            handleException(
-                    "Could not find provided label '" + labelName + "'");
-            return null;
-        }
-
-        List<String> accessUrls = labelObj.getAccessUrls();
-        for (String url : accessUrls) {
-            if (url.startsWith(APIConstants.WSS_PROTOCOL_URL_PREFIX)) {
-                hostsWithSchemes.put(APIConstants.WSS_PROTOCOL, url);
-            }
-            if (url.startsWith(APIConstants.WS_PROTOCOL_URL_PREFIX)) {
-                hostsWithSchemes.put(APIConstants.WS_PROTOCOL, url);
-            }
-        }
-        return hostsWithSchemes;
-    }
-
-    /**
      * Check if the specified subscription is allowed for the logged in user
      *
      * @param apiTypeWrapper Api Type wrapper that contains either an API or API Product
@@ -4623,14 +4616,14 @@ APIConstants.AuditLogConstants.DELETED, this.username);
         APIAdmin apiAdmin = new APIAdminImpl();
         KeyManagerPermissionConfigurationDTO permissions = apiAdmin.getKeyManagerPermissions(keyManagerId);
         String permissionType = permissions.getPermissionType();
-        if (permissions != null && !permissionType.equals(PERMISSION_NOT_RESTRICTED)) {
+        if (permissions != null && !permissionType.equals(APIConstants.PERMISSION_NOT_RESTRICTED)) {
             String[] permissionRoles = permissions.getRoles()
                     .stream()
                     .toArray(String[]::new);
             String[] userRoles = APIUtil.getListOfRoles(username);
             boolean roleIsRestricted = hasIntersection(userRoles, permissionRoles);
-            if ((PERMISSION_ALLOW.equals(permissionType) && !roleIsRestricted)
-                    || (PERMISSION_DENY.equals(permissionType) && roleIsRestricted)) {
+            if ((APIConstants.PERMISSION_ALLOW.equals(permissionType) && !roleIsRestricted)
+                    || (APIConstants.PERMISSION_DENY.equals(permissionType) && roleIsRestricted)) {
                 return false;
             }
         }
@@ -4656,7 +4649,7 @@ APIConstants.AuditLogConstants.DELETED, this.username);
         KeyManagerPermissionConfigurationDTO permissions = keyManagerConfiguration.getPermissions();
         String permissionType = permissions.getPermissionType();
         //Checks if the keymanager is permission restricted and if the user is in the restricted list
-        if (permissions != null && !permissionType.equals(PERMISSION_NOT_RESTRICTED)) {
+        if (permissions != null && !permissionType.equals(APIConstants.PERMISSION_NOT_RESTRICTED)) {
             String[] permissionRoles = permissions.getRoles()
                     .stream()
                     .toArray(String[]::new);
@@ -4664,12 +4657,30 @@ APIConstants.AuditLogConstants.DELETED, this.username);
             //list of common roles the user has and the restricted list
             boolean roleIsRestricted = hasIntersection(userRoles, permissionRoles);
             //Checks if the user is allowed to access the key manager
-            if ((PERMISSION_ALLOW.equals(permissionType) && !roleIsRestricted)
-                    || (PERMISSION_DENY.equals(permissionType) && roleIsRestricted)) {
+            if ((APIConstants.PERMISSION_ALLOW.equals(permissionType) && !roleIsRestricted)
+                    || (APIConstants.PERMISSION_DENY.equals(permissionType) && roleIsRestricted)) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * This method is used to retrieve gateway environments for tenant
+     *
+     * @param organization organization of the gateway environment
+     * @param username     username of the logged-in user
+     * @return Environment list
+     * @throws APIManagementException if error occurred
+     */
+    @Override
+    public Map<String, Environment> getGatewayEnvironmentsByOrganization(String organization, String username) throws APIManagementException {
+
+        Map<String, Environment> environmentsMap = APIUtil.getEnvironments(organization);
+        Map<String, Environment> permittedGatewayEnvironments;
+        List<Environment> environmentList = new ArrayList<Environment>(environmentsMap.values());
+        permittedGatewayEnvironments = APIUtil.extractVisibleEnvironmentsForUser(environmentList, username);
+        return permittedGatewayEnvironments;
     }
 
     public static boolean hasIntersection(String[] arr1, String[] arr2) {

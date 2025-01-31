@@ -20,14 +20,15 @@ package org.wso2.carbon.apimgt.governance.rest.api.util;
 
 import org.apache.cxf.jaxrs.ext.MessageContext;
 import org.wso2.carbon.apimgt.governance.api.GovernanceAPIConstants;
-import org.wso2.carbon.apimgt.governance.impl.GovernanceConstants;
 import org.wso2.carbon.apimgt.governance.api.error.ErrorHandler;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
 import org.wso2.carbon.apimgt.governance.rest.api.dto.ErrorDTO;
-import org.wso2.carbon.apimgt.rest.api.common.RestApiConstants;
 import org.wso2.carbon.context.CarbonContext;
 
+/**
+ * This class contains utility methods for Governance API
+ */
 public class GovernanceAPIUtil {
 
     /**
@@ -37,6 +38,7 @@ public class GovernanceAPIUtil {
      * @return organization
      */
     public static String getValidatedOrganization(MessageContext ctx) throws GovernanceException {
+
         String organization = (String) ctx.get(GovernanceAPIConstants.ORGANIZATION);
         if (organization == null) {
             throw new GovernanceException(
@@ -45,7 +47,6 @@ public class GovernanceAPIUtil {
         }
         return organization;
     }
-
 
     /**
      * Get logged in User
@@ -64,6 +65,7 @@ public class GovernanceAPIUtil {
      * @return A generic errorDTO with the specified details
      */
     public static ErrorDTO getErrorDTO(ErrorHandler errorHandler) {
+
         ErrorDTO errorDTO = new ErrorDTO();
         errorDTO.setCode(errorHandler.getErrorCode());
         errorDTO.setMessage(errorHandler.getErrorMessage());
@@ -74,15 +76,34 @@ public class GovernanceAPIUtil {
     /**
      * Method to get the paginated URL
      *
-     * @param paginatedURL paginated URL
+     * @param templatedURL templated paginated URL
      * @param offset       offset
      * @param limit        limit
-     * @return paginated URL
+     * @return paginated URL with offset and limit
      */
-    public static String getPaginatedURL(String paginatedURL, Integer offset,
+    public static String getPaginatedURL(String templatedURL, Integer offset,
                                          Integer limit) {
-        paginatedURL = paginatedURL.replace(RestApiConstants.LIMIT_PARAM, String.valueOf(limit));
-        paginatedURL = paginatedURL.replace(RestApiConstants.OFFSET_PARAM, String.valueOf(offset));
-        return paginatedURL;
+
+        templatedURL = templatedURL.replace(GovernanceAPIConstants.LIMIT_PARAM, String.valueOf(limit));
+        templatedURL = templatedURL.replace(GovernanceAPIConstants.OFFSET_PARAM, String.valueOf(offset));
+        return templatedURL;
+    }
+
+    /**
+     * Method to get the paginated URL for artifact compliance
+     *
+     * @param templatedURL templated paginated URL
+     * @param offset       offset
+     * @param limit        limit
+     * @param artifactType artifact type
+     * @return paginated URL with offset, limit and artifact type
+     */
+    public static String getArtifactCompliancePageURL(String templatedURL, Integer offset, Integer limit,
+                                                      String artifactType) {
+
+        templatedURL = templatedURL.replace(GovernanceAPIConstants.LIMIT_PARAM, String.valueOf(limit));
+        templatedURL = templatedURL.replace(GovernanceAPIConstants.OFFSET_PARAM, String.valueOf(offset));
+        templatedURL = templatedURL.replace(GovernanceAPIConstants.ARTIFACT_TYPE_PARAM, artifactType);
+        return templatedURL;
     }
 }

@@ -220,16 +220,13 @@ public enum ExceptionCodes implements ErrorHandler {
 
 
     // Labels related codes
-    LABEL_INFORMATION_CANNOT_BE_NULL(900650, "Label information cannot be null", 400, "Label information cannot be " +
-            "null"),
-    LABEL_EXCEPTION(900651, "Label Error", 500, "Error occurred while retrieving label information"),
-    LABEL_NOT_FOUND(900652, "Label Not Found", 404, "Label with specified name cannot be found."),
-    LABEL_NOT_FOUND_IN_API(900653, "Label Not Found In API", 404, "Label with specified name"
-            + " cannot be found in the API."),
-    LABEL_ADDING_FAILED(900654, "Label Error", 500, "Error occurred while trying to add label"),
-    LABEL_UPDATE_FAILED(900655, "Label Error", 500, "Error occurred while trying to update label"),
-    LABEL_DELETION_FAILED(900656, "Label Error", 500, "Error occurred while trying to delete label"),
-
+    LABEL_NAME_ALREADY_EXISTS(900650, "Label Name Already Exists", 409, "Label with name '%s' already exists", false),
+    LABEL_NOT_FOUND(900651, "Label Not Found", 404, "Label not found for the given label ID: %s", false),
+    LABEL_ADDING_FAILED(900652, "Failed To Create Label", 400, "Error occurred while trying to add label. %s", false),
+    LABEL_UPDATE_FAILED(900653, "Failed To Update Label", 400, "Error occurred while trying to update label. %s", false),
+    LABEL_CANNOT_DELETE_ASSOCIATED(900654, "Label Deletion Failed", 409, "The label cannot be deleted as it is associated with API(s).", false),
+    LABEL_ATTACHMENT_FAILED(900655, "Label Attachment Failed", 400, "Error occurred while attaching label(s) to API. %s", false),
+    LABEL_DETACHMENT_FAILED(900656, "Label Detachment Failed", 400, "Error occurred while detaching label(s) from API. %s", false),
 
     //WSDL related codes
     INVALID_WSDL_URL_EXCEPTION(900675, "Invalid WSDL", 400, "Invalid WSDL URL"),
@@ -267,6 +264,7 @@ public enum ExceptionCodes implements ErrorHandler {
     ASYNCAPI_URL_NO_200(900757, "AsyncAPI specification retrieval from URL failed", 400, "Response didn't return a 200 OK status"),
 
     ERROR_READING_ASYNCAPI_SPECIFICATION(900765, "AsyncAPI specification read error", 500, "Exception occurred while reading the AsyncAPI Specification file"),
+    ERROR_RETRIEVE_KM_INFORMATION(900766, "Failed to retrieve key manager information", 500, "Couldn't get the key manager information by name or UUID"),
 
     // REST API related codes
     PARAMETER_NOT_PROVIDED(900700, "Parameter value missing", 400,

@@ -72,6 +72,7 @@ import org.wso2.carbon.apimgt.api.model.BlockConditionsDTO;
 import org.wso2.carbon.apimgt.api.model.Comment;
 import org.wso2.carbon.apimgt.api.model.CommentList;
 import org.wso2.carbon.apimgt.api.model.LLMProvider;
+import org.wso2.carbon.apimgt.api.model.Label;
 import org.wso2.carbon.apimgt.api.model.SequenceBackendData;
 import org.wso2.carbon.apimgt.api.model.DeployedAPIRevision;
 import org.wso2.carbon.apimgt.api.model.Documentation;
@@ -119,6 +120,7 @@ import org.wso2.carbon.apimgt.impl.certificatemgt.CertificateManagerImpl;
 import org.wso2.carbon.apimgt.impl.certificatemgt.ResponseCode;
 import org.wso2.carbon.apimgt.impl.dao.ApiMgtDAO;
 import org.wso2.carbon.apimgt.impl.dao.GatewayArtifactsMgtDAO;
+import org.wso2.carbon.apimgt.impl.dao.LabelsDAO;
 import org.wso2.carbon.apimgt.impl.dao.ServiceCatalogDAO;
 import org.wso2.carbon.apimgt.impl.definitions.OAS3Parser;
 import org.wso2.carbon.apimgt.impl.definitions.OASParserUtil;
@@ -1257,10 +1259,12 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                                         endpointSecurity.setClientId(oldEndpointSecurity.getClientId());
                                         endpointSecurity.setClientSecret(oldEndpointSecurity.getClientSecret());
                                         endpointSecurity.setCustomParameters(oldEndpointSecurity.getCustomParameters());
+                                        endpointSecurity.setProxyConfigs(oldEndpointSecurity.getProxyConfigs());
                                     }
                                 }
-                                endpointSecurityJson.replace(APIConstants.ENDPOINT_SECURITY_PRODUCTION, new JSONParser()
-                                        .parse(new ObjectMapper().writeValueAsString(endpointSecurity)));
+                                endpointSecurityJson.replace(APIConstants.ENDPOINT_SECURITY_PRODUCTION,
+                                        new JSONParser().parse(
+                                                new ObjectMapper().writeValueAsString(endpointSecurity)));
                             }
                         }
                         if (endpointSecurityJson.get(APIConstants.ENDPOINT_SECURITY_SANDBOX) != null) {
@@ -1303,6 +1307,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                                         endpointSecurity.setClientId(oldEndpointSecurity.getClientId());
                                         endpointSecurity.setClientSecret(oldEndpointSecurity.getClientSecret());
                                         endpointSecurity.setCustomParameters(oldEndpointSecurity.getCustomParameters());
+                                        endpointSecurity.setProxyConfigs(oldEndpointSecurity.getProxyConfigs());
                                     }
                                 }
                                 endpointSecurityJson.replace(APIConstants.ENDPOINT_SECURITY_SANDBOX,
@@ -2324,6 +2329,11 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     public void removeDocumentation(String apiId, String docId, String organization) throws APIManagementException {
         try {
             apiPersistenceInstance.deleteDocumentation(new Organization(organization), apiId, docId);
+            JSONObject apiLogObject = new JSONObject();
+            apiLogObject.put(APIConstants.AuditLogConstants.DOCUMENT_ID, docId);
+            apiLogObject.put(APIConstants.AuditLogConstants.API_ID, apiId);
+            APIUtil.logAuditMessage(APIConstants.AuditLogConstants.DOCUMENT, apiLogObject.toString(),
+                    APIConstants.AuditLogConstants.DELETED, this.username);
         } catch (DocumentationPersistenceException e) {
             throw new APIManagementException("Error while deleting the document " + docId);
         }
@@ -2348,6 +2358,13 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 org.wso2.carbon.apimgt.persistence.dto.Documentation updatedDoc = apiPersistenceInstance
                         .updateDocumentation(new Organization(organization), apiId, mappedDoc);
                 if (updatedDoc != null) {
+                    JSONObject apiLogObject = new JSONObject();
+                    apiLogObject.put(APIConstants.AuditLogConstants.NAME, documentation.getName());
+                    apiLogObject.put(APIConstants.AuditLogConstants.TYPE, documentation.getType());
+                    apiLogObject.put(APIConstants.AuditLogConstants.DOCUMENT_ID, documentation.getId());
+                    apiLogObject.put(APIConstants.AuditLogConstants.API_ID, apiId);
+                    APIUtil.logAuditMessage(APIConstants.AuditLogConstants.DOCUMENT, apiLogObject.toString(),
+                            APIConstants.AuditLogConstants.UPDATED, this.username);
                     return DocumentMapper.INSTANCE.toDocumentation(updatedDoc);
                 }
             } catch (DocumentationPersistenceException e) {
@@ -2367,6 +2384,13 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 org.wso2.carbon.apimgt.persistence.dto.Documentation addedDoc = apiPersistenceInstance.addDocumentation(
                         new Organization(organization), uuid, mappedDoc);
                 if (addedDoc != null) {
+                    JSONObject apiLogObject = new JSONObject();
+                    apiLogObject.put(APIConstants.AuditLogConstants.NAME, addedDoc.getName());
+                    apiLogObject.put(APIConstants.AuditLogConstants.TYPE, addedDoc.getType());
+                    apiLogObject.put(APIConstants.AuditLogConstants.DOCUMENT_ID, addedDoc.getId());
+                    apiLogObject.put(APIConstants.AuditLogConstants.API_ID, uuid);
+                    APIUtil.logAuditMessage(APIConstants.AuditLogConstants.DOCUMENT, apiLogObject.toString(),
+                            APIConstants.AuditLogConstants.CREATED, this.username);
                     return DocumentMapper.INSTANCE.toDocumentation(addedDoc);
                 }
             } catch (DocumentationPersistenceException e) {
@@ -2479,6 +2503,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         // DB delete operations
         if (!isError && api != null) {
             try {
+                // Remove API-Label mappings
+                removeAPILabelMappings(apiUuid);
                 // Remove Custom Backend entries of the API
                 deleteCustomBackendByAPIID(apiUuid);
                 deleteAPIRevisions(apiUuid, organization);
@@ -4534,6 +4560,9 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
                 throw new APIManagementException(message);
             }
 
+            // Remove API Product-Label Mappings
+            removeAPILabelMappings(apiProduct.getUuid());
+
             // gatewayType check is required when API Management is deployed on
             // other servers to avoid synapse
             deleteAPIProductRevisions(apiProduct.getUuid(), apiProduct.getOrganization());
@@ -5404,7 +5433,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
 
         try {
             PublisherAPISearchResult searchAPIs = apiPersistenceInstance.searchAPIsForPublisher(org, query,
-                    offset, limit, userCtx, "createdTime", "desc");
+                    offset, limit, userCtx);
             if (log.isDebugEnabled()) {
                 log.debug("Running Solr query : " + query);
             }
@@ -5470,11 +5499,9 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     private void populateApiInfo(APIProduct apiProduct) throws APIManagementException {
 
         APIInfo apiInfo;
-        if (apiProduct.isRevision()) {
-            apiInfo = apiMgtDAO.getAPIInfoByUUID(apiProduct.getRevisionedApiProductId());
-        } else {
-            apiInfo = apiMgtDAO.getAPIInfoByUUID(apiProduct.getUuid());
-        }
+        String apiProductId = apiProduct.isRevision() ? apiProduct.getRevisionedApiProductId() : apiProduct.getUuid();
+        apiInfo = apiMgtDAO.getAPIInfoByUUID(apiProductId);
+
         if (apiInfo != null) {
             apiProduct.setEgress(apiInfo.isEgress());
             apiProduct.setState(apiInfo.getStatus());
@@ -5511,8 +5538,8 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     }
 
     @Override
-    public Map<String, Object> searchPaginatedAPIs(String searchQuery, String organization, int start, int end,
-            String sortBy, String sortOrder) throws APIManagementException {
+    public Map<String, Object> searchPaginatedAPIs(String searchQuery, String organization, int start, int end)
+            throws APIManagementException {
         Map<String, Object> result = new HashMap<String, Object>();
         if (log.isDebugEnabled()) {
             log.debug("Original search query received : " + searchQuery);
@@ -5524,7 +5551,7 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         UserContext userCtx = new UserContext(userNameWithoutChange, org, properties, roles);
         try {
             PublisherAPISearchResult searchAPIs = apiPersistenceInstance.searchAPIsForPublisher(org, searchQuery,
-                    start, end, userCtx, sortBy, sortOrder);
+                    start, end, userCtx);
             if (log.isDebugEnabled()) {
                 log.debug("searched APIs for query : " + searchQuery + " :-->: " + searchAPIs.toString());
             }
@@ -5600,13 +5627,12 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             if (publisherAPI != null) {
                 API api = APIMapper.INSTANCE.toApi(publisherAPI);
                 checkAccessControlPermission(userNameWithoutChange, api.getAccessControl(), api.getAccessControlRoles());
-                /// populate relavant external info
-                // environment
-                String environmentString = null;
-                if (api.getEnvironments() != null) {
-                    environmentString = String.join(",", api.getEnvironments());
-                }
-                api.setEnvironments(APIUtil.extractEnvironmentsForAPI(environmentString, organization));
+                // populate relevant external info environment
+                Map<String, Environment> environmentsMap = APIUtil.getEnvironments(organization);
+                Map<String, Environment> permittedGatewayEnvironments;
+                List<Environment> environmentList = new ArrayList<Environment>(environmentsMap.values());
+                permittedGatewayEnvironments = APIUtil.extractVisibleEnvironmentsForUser(environmentList, username);
+                api.setEnvironments(APIUtil.extractEnvironmentsForAPI(permittedGatewayEnvironments.toString(), organization));
                 //CORS . if null is returned, set default config from the configuration
                 if (api.getCorsConfiguration() == null) {
                     api.setCorsConfiguration(APIUtil.getDefaultCorsConfiguration());
@@ -5659,6 +5685,11 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
             mappedContent = DocumentMapper.INSTANCE.toDocumentContent(content);
             DocumentContent doc = apiPersistenceInstance.addDocumentationContent(new Organization(organization), uuid, docId,
                     mappedContent);
+            JSONObject apiLogObject = new JSONObject();
+            apiLogObject.put(APIConstants.AuditLogConstants.DOCUMENT_ID, docId);
+            apiLogObject.put(APIConstants.AuditLogConstants.API_ID, uuid);
+            APIUtil.logAuditMessage(APIConstants.AuditLogConstants.DOCUMENT_CONTENT, apiLogObject.toString(),
+                    APIConstants.AuditLogConstants.UPDATED, this.username);
         } catch (DocumentationPersistenceException e) {
             throw new APIManagementException("Error while adding content to doc " + docId);
         }
@@ -6984,6 +7015,75 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
     }
 
     @Override
+    public List<Label> getAllLabels(String tenantDomain) throws APIManagementException {
+
+        return labelsDAO.getAllLabels(tenantDomain);
+    }
+
+    @Override
+    public List<Label> getAllLabelsOfApi(String apiID) throws APIManagementException {
+        API api = getAPIbyUUID(apiID, tenantDomain);
+        if (api == null) {
+            throw new APIMgtResourceNotFoundException("Couldn't retrieve existing API with ID: "
+                    + apiID, ExceptionCodes.from(ExceptionCodes.API_NOT_FOUND, apiID));
+        }
+        apiID = api.isRevision() ? api.getRevisionedApiId() : api.getUuid();
+        return labelsDAO.getMappedLabelsForApi(apiID);
+    }
+
+    @Override
+    public List<Label> attachApiLabels(String apiID, List<String> labelList, String tenantDomain) throws APIManagementException {
+        API api = getAPIbyUUID(apiID, tenantDomain);
+        if (api == null || api.isRevision()) {
+            throw new APIMgtResourceNotFoundException("Couldn't retrieve existing API with ID: "
+                    + apiID, ExceptionCodes.from(ExceptionCodes.API_NOT_FOUND, apiID));
+        }
+        // validate labels
+        if (labelList.isEmpty()) {
+            throw new APIManagementException("No labels provided to attach to the API with ID: " + apiID,
+                    ExceptionCodes.from(ExceptionCodes.LABEL_ATTACHMENT_FAILED, "No labels provided"));
+        } else if (!allLabelsValid(labelList, tenantDomain)) {
+            throw new APIManagementException("Invalid label(s) provided to attach to the API with ID: " + apiID,
+                    ExceptionCodes.from(ExceptionCodes.LABEL_ATTACHMENT_FAILED, "Invalid label(s) provided"));
+        }
+        List<String> mappedLabelIDs = labelsDAO.getMappedLabelIDsForApi(apiID);
+        List<String> labelIDs = new ArrayList<>();
+        for (String labelID : labelList) {
+            if (!mappedLabelIDs.contains(labelID)) {
+                labelIDs.add(labelID);
+            }
+        }
+        labelsDAO.addApiLabelMappings(apiID, labelIDs);
+        return labelsDAO.getMappedLabelsForApi(apiID);
+    }
+
+    @Override
+    public List<Label> detachApiLabels(String apiID, List<String> labelList, String tenantDomain) throws APIManagementException {
+        API api = getAPIbyUUID(apiID, tenantDomain);
+        if (api == null || api.isRevision()) {
+            throw new APIMgtResourceNotFoundException("Couldn't retrieve existing API with ID: "
+                    + apiID, ExceptionCodes.from(ExceptionCodes.API_NOT_FOUND, apiID));
+        }
+        // validate labels
+        if (labelList.isEmpty()) {
+            throw new APIManagementException("No labels provided to detach from the API with ID: " + apiID,
+                    ExceptionCodes.from(ExceptionCodes.LABEL_DETACHMENT_FAILED, "No labels provided"));
+        } else if (!allLabelsValid(labelList, tenantDomain)) {
+            throw new APIManagementException("Invalid label(s) provided to detach from the API with ID: " + apiID,
+                    ExceptionCodes.from(ExceptionCodes.LABEL_DETACHMENT_FAILED, "Invalid label(s) provided"));
+        }
+        List<String> mappedLabelIDs = labelsDAO.getMappedLabelIDsForApi(apiID);
+        List<String> labelIDs = new ArrayList<>();
+        for (String labelID : labelList) {
+            if (mappedLabelIDs.contains(labelID)) {
+                labelIDs.add(labelID);
+            }
+        }
+        labelsDAO.deleteApiLabelMappings(apiID, labelIDs);
+        return labelsDAO.getMappedLabelsForApi(apiID);
+    }
+
+    @Override
     public void setOperationPoliciesToURITemplates(String apiId, Set<URITemplate> uriTemplates)
             throws APIManagementException {
         //In case the mediation sequences are not migrated yet with an API update, force an API update to  make sure
@@ -7753,4 +7853,26 @@ class APIProviderImpl extends AbstractAPIManager implements APIProvider {
         }
     }
 
+    private void removeAPILabelMappings(String apiId) throws APIManagementException {
+        try {
+            labelsDAO.deleteApiLabelMappings(apiId, labelsDAO.getMappedLabelIDsForApi(apiId));
+        } catch (APIManagementException e) {
+            throw new APIManagementException("Error while removing label mappings for API " + apiId, e);
+        }
+    }
+
+    private boolean allLabelsValid(List<String> labelIDs, String tenantDomain)
+            throws APIManagementException {
+        try {
+            List<String> availableLabels = labelsDAO.getAllLabelIDs(tenantDomain);
+            for (String label : labelIDs) {
+                if (!availableLabels.contains(label)) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (APIManagementException e) {
+            throw new APIManagementException("Error while validating attached labels", e);
+        }
+    }
 }

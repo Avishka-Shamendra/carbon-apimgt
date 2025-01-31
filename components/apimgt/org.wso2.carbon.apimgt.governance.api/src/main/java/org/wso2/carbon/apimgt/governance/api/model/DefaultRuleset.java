@@ -23,9 +23,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-
 /**
  * This class represents the default ruleset model.
  */
@@ -96,15 +93,15 @@ public class DefaultRuleset {
         this.artifactType = artifactType;
     }
 
-    public InputStream getRulesetContentAsInputStream() throws GovernanceException {
+    public String getRulesetContentString() throws GovernanceException {
         ObjectMapper objectMapper = new ObjectMapper();
+        String rulesetContentString;
         try {
-            String rulesetContentString = objectMapper.writeValueAsString(rulesetContent);
-            return new ByteArrayInputStream(rulesetContentString.getBytes());
+            rulesetContentString = objectMapper.writeValueAsString(rulesetContent);
         } catch (JsonProcessingException e) {
             throw new GovernanceException(GovernanceExceptionCodes.ERROR_WHILE_LOADING_DEFAULT_RULESET_CONTENT);
         }
-
+        return rulesetContentString;
     }
 
     public String getRuleCategory() {

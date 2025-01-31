@@ -37,9 +37,11 @@ import org.wso2.carbon.apimgt.api.dto.ClientCertificateDTO;
 import org.wso2.carbon.apimgt.api.dto.ClonePolicyMetadataDTO;
 import org.wso2.carbon.apimgt.api.dto.ConditionDTO;
 import org.wso2.carbon.apimgt.api.dto.ConditionGroupDTO;
+import org.wso2.carbon.apimgt.api.dto.GatewayVisibilityPermissionConfigurationDTO;
 import org.wso2.carbon.apimgt.api.dto.KeyManagerConfigurationDTO;
 import org.wso2.carbon.apimgt.api.dto.KeyManagerPermissionConfigurationDTO;
 import org.wso2.carbon.apimgt.api.dto.UserApplicationAPIUsage;
+import org.wso2.carbon.apimgt.api.model.AIConfiguration;
 import org.wso2.carbon.apimgt.api.model.API;
 import org.wso2.carbon.apimgt.api.model.APICategory;
 import org.wso2.carbon.apimgt.api.model.APIIdentifier;
@@ -52,6 +54,7 @@ import org.wso2.carbon.apimgt.api.model.APIRevision;
 import org.wso2.carbon.apimgt.api.model.APIRevisionDeployment;
 import org.wso2.carbon.apimgt.api.model.APIStatus;
 import org.wso2.carbon.apimgt.api.model.APIStore;
+import org.wso2.carbon.apimgt.api.model.ApiResult;
 import org.wso2.carbon.apimgt.api.model.ApiTypeWrapper;
 import org.wso2.carbon.apimgt.api.model.Application;
 import org.wso2.carbon.apimgt.api.model.ApplicationInfo;
@@ -59,7 +62,6 @@ import org.wso2.carbon.apimgt.api.model.ApplicationInfoKeyManager;
 import org.wso2.carbon.apimgt.api.model.BlockConditionsDTO;
 import org.wso2.carbon.apimgt.api.model.Comment;
 import org.wso2.carbon.apimgt.api.model.CommentList;
-import org.wso2.carbon.apimgt.api.model.SequenceBackendData;
 import org.wso2.carbon.apimgt.api.model.DeployedAPIRevision;
 import org.wso2.carbon.apimgt.api.model.Environment;
 import org.wso2.carbon.apimgt.api.model.GatewayPolicyData;
@@ -67,9 +69,8 @@ import org.wso2.carbon.apimgt.api.model.GatewayPolicyDeployment;
 import org.wso2.carbon.apimgt.api.model.Identifier;
 import org.wso2.carbon.apimgt.api.model.KeyManager;
 import org.wso2.carbon.apimgt.api.model.KeyManagerApplicationInfo;
-import org.wso2.carbon.apimgt.api.model.AIConfiguration;
-import org.wso2.carbon.apimgt.api.model.LifeCycleEvent;
 import org.wso2.carbon.apimgt.api.model.LLMProvider;
+import org.wso2.carbon.apimgt.api.model.LifeCycleEvent;
 import org.wso2.carbon.apimgt.api.model.MonetizationUsagePublishInfo;
 import org.wso2.carbon.apimgt.api.model.OAuthAppRequest;
 import org.wso2.carbon.apimgt.api.model.OAuthApplicationInfo;
@@ -81,6 +82,7 @@ import org.wso2.carbon.apimgt.api.model.OperationPolicySpecification;
 import org.wso2.carbon.apimgt.api.model.Pagination;
 import org.wso2.carbon.apimgt.api.model.ResourcePath;
 import org.wso2.carbon.apimgt.api.model.Scope;
+import org.wso2.carbon.apimgt.api.model.SequenceBackendData;
 import org.wso2.carbon.apimgt.api.model.SharedScopeUsage;
 import org.wso2.carbon.apimgt.api.model.SubscribedAPI;
 import org.wso2.carbon.apimgt.api.model.Subscriber;
@@ -181,7 +183,7 @@ public class ApiMgtDAO {
     private final Object scopeMutex = new Object();
     private boolean forceCaseInsensitiveComparisons = false;
     private boolean multiGroupAppSharingEnabled = false;
-    private String KeyManagerAccessPublic = "PUBLIC";
+    private String PublicAccessPermission = "PUBLIC";
     private static final String[] keyTypes =
             new String[]{APIConstants.API_KEY_TYPE_PRODUCTION, APIConstants.API_KEY_TYPE_SANDBOX};
     String migrationEnabled = System.getProperty(APIConstants.MIGRATE);
@@ -9653,7 +9655,7 @@ public class ApiMgtDAO {
                 preparedStatement.setString(10, keyManagerConfigurationDTO.getExternalReferenceId());
                 preparedStatement.executeUpdate();
                 KeyManagerPermissionConfigurationDTO permissionDTO = keyManagerConfigurationDTO.getPermissions();
-                if (permissionDTO != null && !KeyManagerAccessPublic.equals(permissionDTO.getPermissionType())) {
+                if (permissionDTO != null && !PublicAccessPermission.equals(permissionDTO.getPermissionType())) {
                     try (PreparedStatement addPermissionStatement = conn
                             .prepareStatement(SQLConstants.KeyManagerPermissionsSqlConstants
                                     .ADD_KEY_MANAGER_PERMISSION_SQL)) {
@@ -9734,7 +9736,7 @@ public class ApiMgtDAO {
                     deletePermissionsStatement.executeUpdate();
                 }
                 KeyManagerPermissionConfigurationDTO permissionDTO = keyManagerConfigurationDTO.getPermissions();
-                if (permissionDTO != null && !KeyManagerAccessPublic.equals(permissionDTO.getPermissionType())) {
+                if (permissionDTO != null && !PublicAccessPermission.equals(permissionDTO.getPermissionType())) {
                     try (PreparedStatement addPermissionStatement = conn.prepareStatement(SQLConstants
                             .KeyManagerPermissionsSqlConstants.ADD_KEY_MANAGER_PERMISSION_SQL)) {
                         for (String role : permissionDTO.getRoles()) {
@@ -9801,7 +9803,7 @@ public class ApiMgtDAO {
                 ps.setString(1, keyManagerUUID);
                 ResultSet resultSet = ps.executeQuery();
                 ArrayList<String> roles = new ArrayList<>();
-                keyManagerPermissions.setPermissionType(KeyManagerAccessPublic);
+                keyManagerPermissions.setPermissionType(PublicAccessPermission);
                 while (resultSet.next()) {
                     roles.add(resultSet.getString("ROLE"));
                     keyManagerPermissions.setPermissionType(resultSet.getString("PERMISSIONS_TYPE"));
@@ -9818,6 +9820,40 @@ public class ApiMgtDAO {
         }
         return keyManagerPermissions;
     }
+
+    public GatewayVisibilityPermissionConfigurationDTO getGatewayVisibilityPermissions(String gatewayUUID)
+            throws APIManagementException {
+
+        GatewayVisibilityPermissionConfigurationDTO gatewayVisibilityPermissions =
+                new GatewayVisibilityPermissionConfigurationDTO();
+        try (Connection conn = APIMgtDBUtil.getConnection()) {
+            gatewayVisibilityPermissions = new GatewayVisibilityPermissionConfigurationDTO();
+            try {
+                String getGatewayVisibilityPermissionQuery = SQLConstants.GET_GATEWAY_VISIBILITY_PERMISSIONS_SQL;
+                conn.setAutoCommit(false);
+                PreparedStatement ps = conn.prepareStatement(getGatewayVisibilityPermissionQuery);
+                ps.setString(1, gatewayUUID);
+                ResultSet resultSet = ps.executeQuery();
+                ArrayList<String> roles = new ArrayList<>();
+                // Setting the PERMISSION_TYPE to PUBLIC in case the resultSet is empty
+                gatewayVisibilityPermissions.setPermissionType(PublicAccessPermission);
+                while (resultSet.next()) {
+                    roles.add(resultSet.getString("ROLE"));
+                    gatewayVisibilityPermissions.setPermissionType(resultSet.getString("PERMISSIONS_TYPE"));
+                }
+                gatewayVisibilityPermissions.setRoles(roles);
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                handleException("Failed to get gateway visibility permission information for gateway environment " + gatewayUUID, e);
+            }
+        } catch (SQLException e) {
+            throw new APIManagementException(
+                    "Error while retrieving gateway visibility permissions with id " + gatewayUUID, e);
+        }
+        return gatewayVisibilityPermissions;
+    }
+
     public List<KeyManagerConfigurationDTO> getKeyManagerConfigurations() throws APIManagementException {
 
         List<KeyManagerConfigurationDTO> keyManagerConfigurationDTOS = new ArrayList<>();
@@ -15042,6 +15078,7 @@ public class ApiMgtDAO {
                     env.setProvider(provider);
                     env.setGatewayType(gatewayType);
                     env.setVhosts(getVhostGatewayEnvironments(connection, id));
+                    env.setPermissions(getGatewayVisibilityPermissions(uuid));
                     envList.add(env);
                 }
             }
@@ -15082,6 +15119,7 @@ public class ApiMgtDAO {
                     env.setDescription(description);
                     env.setProvider(provider);
                     env.setVhosts(getVhostGatewayEnvironments(connection, id));
+                    env.setPermissions(getGatewayVisibilityPermissions(uuid));
                 }
             }
         } catch (SQLException e) {
@@ -15118,6 +15156,21 @@ public class ApiMgtDAO {
                 prepStmt.setString(8, tenantDomain);
                 prepStmt.executeUpdate();
 
+                GatewayVisibilityPermissionConfigurationDTO permissionDTO = environment.getPermissions();
+                if (permissionDTO != null && !PublicAccessPermission.equals(permissionDTO.getPermissionType()) &&
+                        environment.getPermissions().getRoles() != null) {
+                    try (PreparedStatement addPermissionStatement = conn
+                            .prepareStatement(SQLConstants.ADD_GATEWAY_VISIBILITY_PERMISSION_SQL)) {
+                        for (String role : environment.getPermissions().getRoles()) {
+                            addPermissionStatement.setString(1, environment.getUuid());
+                            addPermissionStatement.setString(2, permissionDTO.getPermissionType());
+                            addPermissionStatement.setString(3, role);
+                            addPermissionStatement.addBatch();
+                        }
+                        addPermissionStatement.executeBatch();
+                    }
+                }
+                conn.commit();
                 ResultSet rs = prepStmt.getGeneratedKeys();
                 int id = -1;
                 if (rs.next()) {
@@ -15246,9 +15299,14 @@ public class ApiMgtDAO {
 
         try (Connection connection = APIMgtDBUtil.getConnection()) {
             connection.setAutoCommit(false);
-            try (PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.DELETE_ENVIRONMENT_SQL)) {
-                prepStmt.setString(1, uuid);
-                prepStmt.executeUpdate();
+            try (PreparedStatement deletePermissionsStatement = connection
+                    .prepareStatement(SQLConstants.DELETE_ALL_GATEWAY_VISIBILITY_PERMISSION_SQL)) {
+                deletePermissionsStatement.setString(1, uuid);
+                deletePermissionsStatement.executeUpdate();
+                try (PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.DELETE_ENVIRONMENT_SQL)) {
+                    prepStmt.setString(1, uuid);
+                    prepStmt.executeUpdate();
+                }
                 connection.commit();
             } catch (SQLException e) {
                 connection.rollback();
@@ -15278,6 +15336,25 @@ public class ApiMgtDAO {
                 deleteGatewayVhosts(connection, environment.getId());
                 addGatewayVhosts(connection, environment.getId(), environment.getVhosts());
                 connection.commit();
+                try (PreparedStatement deletePermissionsStatement = connection.prepareStatement(
+                        SQLConstants.DELETE_ALL_GATEWAY_VISIBILITY_PERMISSION_SQL)) {
+                    deletePermissionsStatement.setString(1, environment.getUuid());
+                    deletePermissionsStatement.executeUpdate();
+                }
+                GatewayVisibilityPermissionConfigurationDTO permissionDTO = environment.getPermissions();
+                if (permissionDTO != null && permissionDTO.getPermissionType() != PublicAccessPermission &&
+                        environment.getPermissions().getRoles() != null) {
+                    try (PreparedStatement addPermissionStatement = connection.prepareStatement(
+                            SQLConstants.ADD_GATEWAY_VISIBILITY_PERMISSION_SQL)) {
+                        for (String role : permissionDTO.getRoles()) {
+                            addPermissionStatement.setString(1, environment.getUuid());
+                            addPermissionStatement.setString(2, permissionDTO.getPermissionType());
+                            addPermissionStatement.setString(3, role);
+                            addPermissionStatement.addBatch();
+                        }
+                        addPermissionStatement.executeBatch();
+                    }
+                }
             } catch (SQLException e) {
                 connection.rollback();
                 handleException("Failed to update Environment", e);
@@ -22899,5 +22976,38 @@ public class ApiMgtDAO {
                     ExceptionCodes.INTERNAL_ERROR);
         }
         return APIConstants.API_SUBTYPE_DEFAULT;
+    }
+
+    /**
+     * Get All APIs within an organization
+     *
+     * @param organization Organization
+     * @return List of API Result objets
+     * @throws APIManagementException If an error occurs while getting APIs
+     */
+    public List<ApiResult> getAllAPIs(String organization) throws APIManagementException {
+        List<ApiResult> apis = new ArrayList<>();
+
+        try (Connection connection = APIMgtDBUtil.getConnection()) {
+            try (PreparedStatement preparedStatement = connection.prepareStatement(
+                    SQLConstants.GET_ALL_APIS_OF_ORG)) {
+                preparedStatement.setString(1, organization);
+                try (ResultSet rs = preparedStatement.executeQuery()) {
+                    while (rs.next()) {
+                        ApiResult apiResult = new ApiResult();
+                        apiResult.setId(rs.getString("API_UUID"));
+                        apiResult.setName(rs.getString("API_NAME"));
+                        apiResult.setVersion(rs.getString("API_VERSION"));
+                        apiResult.setProvider(rs.getString("API_PROVIDER"));
+                        apiResult.setType(rs.getString("API_TYPE"));
+                        apis.add(apiResult);
+                    }
+                }
+            }
+            return apis;
+        } catch (SQLException e) {
+            throw new APIManagementException("Error while retrieving apis for the organization " + organization, e,
+                    ExceptionCodes.INTERNAL_ERROR);
+        }
     }
 }

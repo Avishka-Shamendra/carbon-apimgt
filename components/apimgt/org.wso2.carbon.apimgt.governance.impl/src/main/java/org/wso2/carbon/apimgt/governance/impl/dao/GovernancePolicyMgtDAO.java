@@ -26,6 +26,7 @@ import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyList;
 import org.wso2.carbon.apimgt.governance.api.model.Ruleset;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * This interface represents the DAO layer for Governance Policy Management
@@ -56,12 +57,11 @@ public interface GovernancePolicyMgtDAO {
     /**
      * Get Governance Policy by ID
      *
-     * @param organization Organization
-     * @param policyID     Policy ID
+     * @param policyID Policy ID
      * @return GovernancePolicy
      * @throws GovernanceException If an error occurs while retrieving the policy
      */
-    GovernancePolicy getGovernancePolicyByID(String organization, String policyID) throws GovernanceException;
+    GovernancePolicy getGovernancePolicyByID(String policyID) throws GovernanceException;
 
     /**
      * Get all the Governance Policies
@@ -106,6 +106,16 @@ public interface GovernancePolicyMgtDAO {
     List<Ruleset> getRulesetsByPolicyId(String policyId) throws GovernanceException;
 
     /**
+     * Get the list of policies by label
+     *
+     * @param label        label
+     * @param organization organization
+     * @return Map of policy IDs, policy names
+     * @throws GovernanceException If an error occurs while getting the policies
+     */
+    Map<String, String> getPoliciesByLabel(String label, String organization) throws GovernanceException;
+
+    /**
      * Get PolicyIds by label
      *
      * @param label        Label
@@ -114,6 +124,16 @@ public interface GovernancePolicyMgtDAO {
      * @return List of Policy IDs
      */
     List<String> getPoliciesByLabelAndState(String label, GovernableState state, String organization)
+            throws GovernanceException;
+
+
+    /**
+     * Get Policies without labels
+     *
+     * @param organization Organization
+     * @return Map of Policy IDs, Policy Names
+     */
+    Map<String, String> getPoliciesWithoutLabels(String organization)
             throws GovernanceException;
 
     /**

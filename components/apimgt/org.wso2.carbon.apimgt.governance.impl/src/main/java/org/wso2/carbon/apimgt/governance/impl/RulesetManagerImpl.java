@@ -20,9 +20,10 @@ package org.wso2.carbon.apimgt.governance.impl;
 
 import org.wso2.carbon.apimgt.governance.api.RulesetManager;
 import org.wso2.carbon.apimgt.governance.api.ValidationEngine;
-import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
-import org.wso2.carbon.apimgt.governance.api.model.Ruleset;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
+import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
+import org.wso2.carbon.apimgt.governance.api.model.Rule;
+import org.wso2.carbon.apimgt.governance.api.model.Ruleset;
 import org.wso2.carbon.apimgt.governance.api.model.RulesetInfo;
 import org.wso2.carbon.apimgt.governance.api.model.RulesetList;
 import org.wso2.carbon.apimgt.governance.impl.dao.RulesetMgtDAO;
@@ -52,7 +53,7 @@ public class RulesetManagerImpl implements RulesetManager {
      */
     @Override
     public RulesetInfo createNewRuleset(String organization, Ruleset ruleset) throws GovernanceException {
-        ruleset.setId(GovernanceUtil.generateUUID());
+        ruleset.setId(ruleset.getId() == null ? GovernanceUtil.generateUUID() : ruleset.getId());
         ValidationEngine validationEngine = ServiceReferenceHolder.getInstance().
                 getValidationEngineService().getValidationEngine();
         boolean isRulesetContentValid = validationEngine.isRulesetValid(ruleset);
@@ -78,14 +79,13 @@ public class RulesetManagerImpl implements RulesetManager {
     /**
      * Get a Governance Ruleset by ID
      *
-     * @param organization Organization
-     * @param rulesetId    Ruleset ID
+     * @param rulesetId Ruleset ID
      * @return RulesetInfo object
      * @throws GovernanceException If an error occurs while getting the ruleset
      */
     @Override
-    public RulesetInfo getRulesetById(String organization, String rulesetId) throws GovernanceException {
-        return rulesetMgtDAO.getRulesetById(organization, rulesetId);
+    public RulesetInfo getRulesetById(String rulesetId) throws GovernanceException {
+        return rulesetMgtDAO.getRulesetById(rulesetId);
     }
 
     /**
@@ -100,7 +100,7 @@ public class RulesetManagerImpl implements RulesetManager {
     public String getRulesetContent(String organization, String rulesetId) throws GovernanceException {
         String content = rulesetMgtDAO.getRulesetContent(organization, rulesetId);
         if (content == null) {
-            throw new GovernanceException(GovernanceExceptionCodes.RULESET_NOT_FOUND, rulesetId, organization);
+            throw new GovernanceException(GovernanceExceptionCodes.RULESET_NOT_FOUND, rulesetId);
         }
         return content;
 
@@ -111,12 +111,11 @@ public class RulesetManagerImpl implements RulesetManager {
      *
      * @param organization Organization
      * @param rulesetId    Ruleset ID
-     * @return String Ruleset ID of the deleted ruleset
      * @throws GovernanceException If an error occurs while deleting the ruleset
      */
     @Override
     public void deleteRuleset(String organization, String rulesetId) throws GovernanceException {
-        RulesetInfo ruleset = rulesetMgtDAO.getRulesetById(organization, rulesetId);
+        RulesetInfo ruleset = rulesetMgtDAO.getRulesetById(rulesetId);
         if (isRulesetAssociatedWithPolicies(rulesetId)) {
             throw new GovernanceException(GovernanceExceptionCodes.ERROR_RULESET_ASSOCIATED_WITH_POLICIES,
                     ruleset.getId(), organization);
@@ -145,7 +144,9 @@ public class RulesetManagerImpl implements RulesetManager {
      * @throws GovernanceException If an error occurs while updating the ruleset
      */
     @Override
-    public RulesetInfo updateRuleset(String organization, String rulesetId, Ruleset ruleset) throws GovernanceException {
+    public RulesetInfo updateRuleset(String organization, String rulesetId, Ruleset ruleset)
+            throws GovernanceException {
+
         ValidationEngine validationEngine = ServiceReferenceHolder.getInstance().
                 getValidationEngineService().getValidationEngine();
         boolean isRulesetContentValid = validationEngine.isRulesetValid(ruleset);
@@ -166,5 +167,17 @@ public class RulesetManagerImpl implements RulesetManager {
     @Override
     public List<String> getRulesetUsage(String rulesetId) throws GovernanceException {
         return rulesetMgtDAO.getAssociatedPoliciesForRuleset(rulesetId);
+    }
+
+    /**
+     * Get the rules using the Governance Ruleset
+     *
+     * @param rulesetId Ruleset ID
+     * @return List of rules using the ruleset
+     * @throws GovernanceException If an error occurs while getting the ruleset usage
+     */
+    @Override
+    public List<Rule> getRules(String rulesetId) throws GovernanceException {
+        return rulesetMgtDAO.getRulesByRulesetId(rulesetId);
     }
 }

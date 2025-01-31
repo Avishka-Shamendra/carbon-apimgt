@@ -244,6 +244,12 @@ public class APIMappingUtil {
             dto.setEnvironmentList(environmentListToReturn);
         }
 
+        if (model.getEnvironments() != null) {
+            List<String> environmentListToReturn = new ArrayList<>();
+            environmentListToReturn.addAll(model.getEnvironments());
+            dto.setEnvironmentList(environmentListToReturn);
+        }
+
         dto.setAuthorizationHeader(model.getAuthorizationHeader());
         dto.setApiKeyHeader(model.getApiKeyHeader());
         if (model.getApiSecurity() != null) {
@@ -506,7 +512,9 @@ public class APIMappingUtil {
     public static List<APIEndpointURLsDTO> fromAPIRevisionListToEndpointsList(APIDTO apidto, String organization)
             throws APIManagementException {
 
-        Map<String, Environment> environments = APIUtil.getEnvironments(organization);
+        Map<String, Environment> environmentsMap = APIUtil.getEnvironments(organization);
+        List<Environment> environmentsList = new ArrayList<Environment>(environmentsMap.values());
+        Map<String, Environment> permittedEnvironments = APIUtil.extractVisibleEnvironmentsForUser(environmentsList, RestApiCommonUtil.getLoggedInUsername());
         APIConsumer apiConsumer = RestApiCommonUtil.getLoggedInUserConsumer();
         List<APIRevisionDeployment> revisionDeployments = apiConsumer.getAPIRevisionDeploymentListOfAPI(apidto.getId());
 
@@ -522,7 +530,7 @@ public class APIMappingUtil {
         for (APIRevisionDeployment revisionDeployment : revisionDeployments) {
             if (revisionDeployment.isDisplayOnDevportal()) {
                 // Deployed environment
-                Environment environment = environments.get(revisionDeployment.getDeployment());
+                Environment environment = permittedEnvironments.get(revisionDeployment.getDeployment());
                 if (environment != null) {
                     APIEndpointURLsDTO apiEndpointURLsDTO = fromAPIRevisionToEndpoints(apidto, environment,
                             revisionDeployment.getVhost(), customGatewayUrl, organization);
@@ -1107,6 +1115,35 @@ public class APIMappingUtil {
             apiInfoDTO.setMonetizationLabel(RestApiConstants.FREEMIUM);
         }
         apiInfoDTO.setThrottlingPolicies(throttlingPolicyNames);
+    }
+
+    /**
+     * Retrieves the value of the specified query parameter from a query string.
+     *
+     * @param query The query string containing key-value pairs.
+     * @return The value of the "kmId" parameter, or null if not found or if the query is empty or null.
+     */
+    public static String getKmIdValue(String query) {
+
+        if (StringUtils.isBlank(query)) {
+            return null;
+        }
+
+        String[] pairs = query.split("&");
+        for (String pair : pairs) {
+            String[] keyValue = pair.split(":");
+            if (keyValue.length > 0) {
+                String key = keyValue[0].trim();
+                if (key.equals("kmId")) {
+                    if (keyValue.length > 1) {
+                        return keyValue[1].trim();
+                    } else {
+                        return "";
+                    }
+                }
+            }
+        }
+        return null;
     }
 
 }

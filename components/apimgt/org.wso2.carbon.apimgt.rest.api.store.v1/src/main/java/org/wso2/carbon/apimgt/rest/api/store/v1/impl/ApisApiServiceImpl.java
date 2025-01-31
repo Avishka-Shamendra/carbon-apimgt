@@ -104,9 +104,7 @@ public class ApisApiServiceImpl implements ApisApiService {
                         .replace(APIConstants.CONTENT_SEARCH_TYPE_PREFIX + ":", APIConstants.NAME_TYPE_PREFIX + ":");
             }
 
-            Map allMatchedApisMap = apiConsumer.searchPaginatedAPIs(query, organization, offset,
-                    limit, null, null);
-            
+            Map allMatchedApisMap = apiConsumer.searchPaginatedAPIs(query, organization, offset, limit);
 
             Set<Object> sortedSet = (Set<Object>) allMatchedApisMap.get("apis"); // This is a SortedSet
             ArrayList<Object> allMatchedApis = new ArrayList<>(sortedSet);
@@ -830,7 +828,7 @@ public class ApisApiServiceImpl implements ApisApiService {
      */
     @Override
     public Response apisApiIdSwaggerGet(String apiId, String environmentName,
-            String ifNoneMatch, String xWSO2Tenant, String xWSO2TenantQ, MessageContext messageContext) {
+            String ifNoneMatch, String xWSO2Tenant, String xWSO2TenantQ, String query, MessageContext messageContext) {
         try {
             String organization;
             if (StringUtils.isNotEmpty(xWSO2TenantQ) && StringUtils.isEmpty(xWSO2Tenant)) {
@@ -880,7 +878,14 @@ public class ApisApiServiceImpl implements ApisApiService {
             String apiSwagger = null;
             if (StringUtils.isNotEmpty(environmentName)) {
                 try {
-                    apiSwagger = apiConsumer.getOpenAPIDefinitionForEnvironment(api, environmentName);
+                    if (StringUtils.isNotEmpty(query)){
+                        String kmId = APIMappingUtil.getKmIdValue(query);
+                        if (StringUtils.isNotBlank(kmId)) {
+                            apiSwagger = apiConsumer.getOpenAPIDefinitionForEnvironmentByKm(api, environmentName, kmId);
+                        }
+                    } else {
+                        apiSwagger = apiConsumer.getOpenAPIDefinitionForEnvironment(api, environmentName);
+                    }
                 } catch (APIManagementException e) {
                     // handle gateway not found exception otherwise pass it
                     if (RestApiUtil.isDueToResourceNotFound(e)) {
@@ -1098,14 +1103,14 @@ public class ApisApiServiceImpl implements ApisApiService {
         API api = apiConsumer.getLightweightAPIByUUID(apiId, organization);
         APIIdentifier apiIdentifier = api.getId();
 
-        List<Environment> environments = APIUtil.getEnvironmentsOfAPI(api);
+        Map<String, Environment> environments = APIUtil.getEnvironments(organization);
         if (environments != null && environments.size() > 0) {
             if (StringUtils.isEmpty(environmentName)) {
                 environmentName = api.getEnvironments().iterator().next();
             }
 
             Environment selectedEnvironment = null;
-            for (Environment environment: environments) {
+            for (Environment environment: environments.values()) {
                if (environment.getName().equals(environmentName)) {
                    selectedEnvironment = environment;
                    break;

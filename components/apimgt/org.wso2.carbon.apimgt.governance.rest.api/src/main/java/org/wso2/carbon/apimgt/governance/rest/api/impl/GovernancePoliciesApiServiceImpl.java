@@ -19,18 +19,16 @@
 
 package org.wso2.carbon.apimgt.governance.rest.api.impl;
 
+import org.apache.cxf.jaxrs.ext.MessageContext;
 import org.wso2.carbon.apimgt.governance.api.GovernanceAPIConstants;
-import org.wso2.carbon.apimgt.governance.impl.GovernanceConstants;
+import org.wso2.carbon.apimgt.governance.api.PolicyManager;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
-import org.wso2.carbon.apimgt.governance.api.PolicyManager;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicy;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyList;
 import org.wso2.carbon.apimgt.governance.impl.ComplianceManagerImpl;
 import org.wso2.carbon.apimgt.governance.impl.PolicyManagerImpl;
 import org.wso2.carbon.apimgt.governance.rest.api.GovernancePoliciesApiService;
-import org.apache.cxf.jaxrs.ext.MessageContext;
-
 import org.wso2.carbon.apimgt.governance.rest.api.dto.GovernancePolicyDTO;
 import org.wso2.carbon.apimgt.governance.rest.api.dto.GovernancePolicyListDTO;
 import org.wso2.carbon.apimgt.governance.rest.api.dto.PaginationDTO;
@@ -44,7 +42,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.ws.rs.core.Response;
 
 /**
@@ -104,9 +101,8 @@ public class GovernancePoliciesApiServiceImpl implements GovernancePoliciesApiSe
      */
     public Response getGovernancePolicyById(String policyId, MessageContext messageContext) throws GovernanceException {
         PolicyManager policyManager = new PolicyManagerImpl();
-        String organization = GovernanceAPIUtil.getValidatedOrganization(messageContext);
 
-        GovernancePolicy policy = policyManager.getGovernancePolicyByID(organization, policyId);
+        GovernancePolicy policy = policyManager.getGovernancePolicyByID(policyId);
         GovernancePolicyDTO policyDTO = PolicyMappingUtil.fromGovernancePolicyToGovernancePolicyDTO(policy);
         return Response.status(Response.Status.OK).entity(policyDTO).build();
     }

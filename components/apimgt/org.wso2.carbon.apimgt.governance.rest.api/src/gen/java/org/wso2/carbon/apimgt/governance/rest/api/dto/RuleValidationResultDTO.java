@@ -4,8 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
-import java.util.ArrayList;
-import java.util.List;
 import javax.validation.constraints.*;
 
 /**
@@ -92,8 +90,9 @@ return null;
         }
     } 
     private SeverityEnum severity = null;
-    private List<String> violatedPaths = new ArrayList<String>();
+    private String violatedPath = null;
     private String message = null;
+    private String description = null;
 
   /**
    * UUID of the rule.
@@ -168,21 +167,21 @@ return null;
   }
 
   /**
-   * List of paths that violate the rule.
+   * Path in the artifact where the rule is violated.
    **/
-  public RuleValidationResultDTO violatedPaths(List<String> violatedPaths) {
-    this.violatedPaths = violatedPaths;
+  public RuleValidationResultDTO violatedPath(String violatedPath) {
+    this.violatedPath = violatedPath;
     return this;
   }
 
   
-  @ApiModelProperty(value = "List of paths that violate the rule.")
-  @JsonProperty("violatedPaths")
-  public List<String> getViolatedPaths() {
-    return violatedPaths;
+  @ApiModelProperty(value = "Path in the artifact where the rule is violated.")
+  @JsonProperty("violatedPath")
+  public String getViolatedPath() {
+    return violatedPath;
   }
-  public void setViolatedPaths(List<String> violatedPaths) {
-    this.violatedPaths = violatedPaths;
+  public void setViolatedPath(String violatedPath) {
+    this.violatedPath = violatedPath;
   }
 
   /**
@@ -203,6 +202,24 @@ return null;
     this.message = message;
   }
 
+  /**
+   * Description of the rule.
+   **/
+  public RuleValidationResultDTO description(String description) {
+    this.description = description;
+    return this;
+  }
+
+  
+  @ApiModelProperty(example = "API name should be between 5 to 50 characters", value = "Description of the rule.")
+  @JsonProperty("description")
+  public String getDescription() {
+    return description;
+  }
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
 
   @Override
   public boolean equals(java.lang.Object o) {
@@ -217,13 +234,14 @@ return null;
         Objects.equals(name, ruleValidationResult.name) &&
         Objects.equals(status, ruleValidationResult.status) &&
         Objects.equals(severity, ruleValidationResult.severity) &&
-        Objects.equals(violatedPaths, ruleValidationResult.violatedPaths) &&
-        Objects.equals(message, ruleValidationResult.message);
+        Objects.equals(violatedPath, ruleValidationResult.violatedPath) &&
+        Objects.equals(message, ruleValidationResult.message) &&
+        Objects.equals(description, ruleValidationResult.description);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, status, severity, violatedPaths, message);
+    return Objects.hash(id, name, status, severity, violatedPath, message, description);
   }
 
   @Override
@@ -235,8 +253,9 @@ return null;
     sb.append("    name: ").append(toIndentedString(name)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    severity: ").append(toIndentedString(severity)).append("\n");
-    sb.append("    violatedPaths: ").append(toIndentedString(violatedPaths)).append("\n");
+    sb.append("    violatedPath: ").append(toIndentedString(violatedPath)).append("\n");
     sb.append("    message: ").append(toIndentedString(message)).append("\n");
+    sb.append("    description: ").append(toIndentedString(description)).append("\n");
     sb.append("}");
     return sb.toString();
   }

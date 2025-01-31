@@ -32,8 +32,8 @@ import org.wso2.carbon.apimgt.api.model.ApiTypeWrapper;
 import org.wso2.carbon.apimgt.api.model.CommentList;
 import org.wso2.carbon.apimgt.api.model.Application;
 import org.wso2.carbon.apimgt.api.model.Comment;
+import org.wso2.carbon.apimgt.api.model.Environment;
 import org.wso2.carbon.apimgt.api.model.Identifier;
-import org.wso2.carbon.apimgt.api.model.KeyManagerApplicationInfo;
 import org.wso2.carbon.apimgt.api.model.Monetization;
 import org.wso2.carbon.apimgt.api.model.OAuthApplicationInfo;
 import org.wso2.carbon.apimgt.api.model.ResourceFile;
@@ -574,6 +574,18 @@ public interface APIConsumer extends APIManager {
             throws APIManagementException;
 
     /**
+     * Returns the swagger definition of the API for the given gateway environment and key manager as a string
+     *
+     * @param api
+     * @param environmentName API Gateway environment name
+     * @param kmId            Key Manager UUID
+     * @return swagger string
+     * @throws APIManagementException if error occurred while obtaining the swagger definition
+     */
+    String getOpenAPIDefinitionForEnvironmentByKm(API api, String environmentName, String kmId)
+            throws APIManagementException;
+
+    /**
      * Revokes the oldAccessToken generating a new one.
      *
      * @param oldAccessToken  Token to be revoked
@@ -869,6 +881,16 @@ public interface APIConsumer extends APIManager {
      * @throws APIManagementException if error occurred
      */
     boolean isKeyManagerByNameAllowedForUser(String keyManagerName, String organization, String username)
+            throws APIManagementException;
+
+    /**
+     * This method used to retrieve gateway environment for tenant
+     * @param organization organization of the gateway environment
+     * @param username username of the logged-in user
+     * @return Environment list
+     * @throws APIManagementException if error occurred
+     */
+    Map<String, Environment> getGatewayEnvironmentsByOrganization(String organization, String username)
             throws APIManagementException;
 
     /**

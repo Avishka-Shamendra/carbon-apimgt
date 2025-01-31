@@ -19,6 +19,7 @@
 package org.wso2.carbon.apimgt.governance.impl.dao;
 
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
+import org.wso2.carbon.apimgt.governance.api.model.Rule;
 import org.wso2.carbon.apimgt.governance.api.model.Ruleset;
 import org.wso2.carbon.apimgt.governance.api.model.RulesetInfo;
 import org.wso2.carbon.apimgt.governance.api.model.RulesetList;
@@ -62,12 +63,11 @@ public interface RulesetMgtDAO {
     /**
      * Get a Governance Ruleset by ID
      *
-     * @param organization Organization
-     * @param rulesetId    Ruleset ID
+     * @param rulesetId Ruleset ID
      * @return RulesetInfo object
      * @throws GovernanceException If an error occurs while getting the ruleset
      */
-    RulesetInfo getRulesetById(String organization, String rulesetId) throws GovernanceException;
+    RulesetInfo getRulesetById(String rulesetId) throws GovernanceException;
 
     /**
      * Get the content of a Governance Ruleset
@@ -107,4 +107,12 @@ public interface RulesetMgtDAO {
      * @return List of associated policies
      */
     List<String> getAssociatedPoliciesForRuleset(String rulesetId) throws GovernanceException;
+
+    /**
+     * Get the rules of a Ruleset
+     *
+     * @param rulesetId Ruleset ID
+     * @return List of rules
+     */
+    List<Rule> getRulesByRulesetId(String rulesetId) throws GovernanceException;
 }

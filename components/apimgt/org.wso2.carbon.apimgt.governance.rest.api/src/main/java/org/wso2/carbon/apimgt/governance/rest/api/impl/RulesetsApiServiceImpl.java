@@ -18,11 +18,14 @@
 
 package org.wso2.carbon.apimgt.governance.rest.api.impl;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.cxf.jaxrs.ext.MessageContext;
 import org.apache.cxf.jaxrs.ext.multipart.Attachment;
 import org.springframework.http.HttpHeaders;
 import org.wso2.carbon.apimgt.governance.api.GovernanceAPIConstants;
 import org.wso2.carbon.apimgt.governance.api.RulesetManager;
+import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
+import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactType;
 import org.wso2.carbon.apimgt.governance.api.model.RuleCategory;
 import org.wso2.carbon.apimgt.governance.api.model.RuleType;
@@ -37,18 +40,18 @@ import org.wso2.carbon.apimgt.governance.rest.api.dto.RulesetInfoDTO;
 import org.wso2.carbon.apimgt.governance.rest.api.dto.RulesetListDTO;
 import org.wso2.carbon.apimgt.governance.rest.api.mappings.RulesetMappingUtil;
 import org.wso2.carbon.apimgt.governance.rest.api.util.GovernanceAPIUtil;
-import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
-import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
 import org.wso2.carbon.apimgt.rest.api.common.RestApiCommonUtil;
 import org.wso2.carbon.apimgt.rest.api.common.RestApiConstants;
 
-import javax.ws.rs.core.Response;
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.ws.rs.core.Response;
 
 
 /**
@@ -88,7 +91,7 @@ public class RulesetsApiServiceImpl implements RulesetsApiService {
             ruleset.setProvider(provider);
             ruleset.setDescription(description);
             ruleset.setDocumentationLink(documentationLink);
-            ruleset.setRulesetContent(rulesetContentInputStream);
+            ruleset.setRulesetContent(IOUtils.toString(rulesetContentInputStream, StandardCharsets.UTF_8));
 
             String username = GovernanceAPIUtil.getLoggedInUsername();
             String organization = GovernanceAPIUtil.getValidatedOrganization(messageContext);
@@ -106,6 +109,10 @@ public class RulesetsApiServiceImpl implements RulesetsApiService {
             String error = String.format("Error while creating URI for new Ruleset %s",
                     name);
             throw new GovernanceException(error, e, GovernanceExceptionCodes.INTERNAL_SERVER_ERROR);
+        } catch (IOException e) {
+            throw new GovernanceException("Error while converting ruleset content stream", e);
+        } finally {
+            IOUtils.closeQuietly(rulesetContentInputStream);
         }
     }
 
@@ -137,9 +144,8 @@ public class RulesetsApiServiceImpl implements RulesetsApiService {
     @Override
     public Response getRulesetById(String rulesetId, MessageContext messageContext) throws GovernanceException {
         RulesetManager rulesetManager = new RulesetManagerImpl();
-        String organization = GovernanceAPIUtil.getValidatedOrganization(messageContext);
 
-        RulesetInfo ruleset = rulesetManager.getRulesetById(organization, rulesetId);
+        RulesetInfo ruleset = rulesetManager.getRulesetById(rulesetId);
         RulesetInfoDTO rulesetInfoDTO = RulesetMappingUtil.fromRulesetInfoToRulesetInfoDTO(ruleset);
         return Response.status(Response.Status.OK).entity(rulesetInfoDTO).build();
     }
@@ -187,7 +193,8 @@ public class RulesetsApiServiceImpl implements RulesetsApiService {
      * @return Response object
      * @throws GovernanceException If an error occurs while getting the rulesets
      */
-    public Response getRulesets(Integer limit, Integer offset, MessageContext messageContext) throws GovernanceException {
+    public Response getRulesets(Integer limit, Integer offset, MessageContext messageContext)
+            throws GovernanceException {
 
         limit = limit != null ? limit : RestApiConstants.PAGINATION_LIMIT_DEFAULT;
         offset = offset != null ? offset : RestApiConstants.PAGINATION_OFFSET_DEFAULT;
@@ -279,29 +286,39 @@ public class RulesetsApiServiceImpl implements RulesetsApiService {
     public Response updateRulesetById(String rulesetId, String name, InputStream rulesetContentInputStream,
                                       Attachment rulesetContentDetail, String ruleType, String artifactType,
                                       String provider, String description, String ruleCategory,
-                                      String documentationLink, MessageContext messageContext) throws GovernanceException {
-        Ruleset ruleset = new Ruleset();
-        ruleset.setName(name);
-        ruleset.setRuleCategory(RuleCategory.fromString(ruleCategory));
-        ruleset.setRuleType(RuleType.fromString(ruleType));
-        ruleset.setArtifactType(ArtifactType.fromString(artifactType));
-        ruleset.setProvider(provider);
-        ruleset.setId(rulesetId);
-        ruleset.setDescription(description);
-        ruleset.setDocumentationLink(documentationLink);
-        ruleset.setRulesetContent(rulesetContentInputStream);
+                                      String documentationLink, MessageContext messageContext)
+            throws GovernanceException {
 
-        String username = GovernanceAPIUtil.getLoggedInUsername();
-        String organization = GovernanceAPIUtil.getValidatedOrganization(messageContext);
-        ruleset.setUpdatedBy(username);
+        try {
+            Ruleset ruleset = new Ruleset();
+            ruleset.setName(name);
+            ruleset.setRuleCategory(RuleCategory.fromString(ruleCategory));
+            ruleset.setRuleType(RuleType.fromString(ruleType));
+            ruleset.setArtifactType(ArtifactType.fromString(artifactType));
+            ruleset.setProvider(provider);
+            ruleset.setId(rulesetId);
+            ruleset.setDescription(description);
+            ruleset.setDocumentationLink(documentationLink);
+            ruleset.setRulesetContent(IOUtils.toString(rulesetContentInputStream, StandardCharsets.UTF_8));
 
-        RulesetManager rulesetManager = new RulesetManagerImpl();
-        RulesetInfo updatedRuleset = rulesetManager.updateRuleset(organization, rulesetId, ruleset);
+            String username = GovernanceAPIUtil.getLoggedInUsername();
+            String organization = GovernanceAPIUtil.getValidatedOrganization(messageContext);
+            ruleset.setUpdatedBy(username);
 
-        // Re-access policy compliance in the background
-        new ComplianceManagerImpl().handleRulesetChangeEvent(rulesetId, organization);
+            RulesetManager rulesetManager = new RulesetManagerImpl();
+            RulesetInfo updatedRuleset = rulesetManager.updateRuleset(organization, rulesetId, ruleset);
 
-        return Response.status(Response.Status.OK).entity(RulesetMappingUtil.
-                fromRulesetInfoToRulesetInfoDTO(updatedRuleset)).build();
+            // Re-access policy compliance in the background
+            new ComplianceManagerImpl().handleRulesetChangeEvent(rulesetId, organization);
+
+            return Response.status(Response.Status.OK).entity(RulesetMappingUtil.
+                    fromRulesetInfoToRulesetInfoDTO(updatedRuleset)).build();
+        } catch (IOException e) {
+            throw new GovernanceException("Error while converting ruleset content stream", e);
+        } finally {
+            IOUtils.closeQuietly(rulesetContentInputStream);
+        }
+
+
     }
 }

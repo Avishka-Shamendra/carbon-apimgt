@@ -23,8 +23,8 @@
 
     <parent>
         <groupId>org.wso2.carbon.apimgt</groupId>
-        <artifactId>governance</artifactId>
-        <version>9.30.69-SNAPSHOT</version>
+        <artifactId>apimgt</artifactId>
+        <version>9.31.3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -58,6 +58,14 @@
                         </Import-Package>
                     </instructions>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

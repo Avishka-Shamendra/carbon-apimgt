@@ -1084,7 +1084,8 @@ public class APIMappingUtil {
     }
 
     public static APIDTO fromAPItoDTO(API model, boolean preserveCredentials,
-                                      APIProvider apiProviderParam) throws APIManagementException {
+                                      APIProvider apiProviderParam)
+            throws APIManagementException {
 
         APIProvider apiProvider;
         if (apiProviderParam != null) {
@@ -1508,7 +1509,7 @@ public class APIMappingUtil {
         }
         dto.setCategories(categoryNameList);
         dto.setKeyManagers(model.getKeyManagers());
-        
+
         if (model.getAudience() != null) {
             dto.setAudience(AudienceEnum.valueOf(model.getAudience()));
         }

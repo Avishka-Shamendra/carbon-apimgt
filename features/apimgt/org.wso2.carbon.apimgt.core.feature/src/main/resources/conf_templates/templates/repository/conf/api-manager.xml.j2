@@ -36,7 +36,8 @@
     <JWTConfiguration>
         <!-- Enable/Disable JWT generation. Default is false. -->
         <EnableJWTGeneration>{{apim.jwt.enable}}</EnableJWTGeneration>
-
+        <!-- Enable/Disable JWKS in memory API deployment. Default is true. -->
+        <EnableJWKSApi>{{apim.jwt.enable_jwks_api}}</EnableJWKSApi>
         <!-- Name of the security context header to be added to the validated requests. -->
         <JWTHeader>{{apim.jwt.header}}</JWTHeader>
 
@@ -132,6 +133,10 @@
                 <Name>{{environment_name.name}}</Name>
                 <DisplayName>{{environment_name.display_name}}</DisplayName>
                 <GatewayType>{{environment_name.gateway_type}}</GatewayType>
+                <!-- Configure Visibility -->
+                {% if environment_name.visibility is defined %}
+                <Visibility>{% for role in environment_name.visibility %}{{role}}{{ "," if not loop.last }}{% endfor %}</Visibility>
+                {% endif %}
                 <Description>{{environment_name.description}}</Description>
                 <!-- Server URL of the API gateway -->
                 <ServerURL>{{environment_name.service_url}}</ServerURL>
@@ -872,7 +877,26 @@
                 <URI>/api/am/devportal/{version}/marketplace-assistant/chat</URI>
                 <HTTPMethods>POST</HTTPMethods>
             </AllowedURI>
+            <AllowedURI>
+                <URI>/api/am/governance/{version}/swagger.yaml</URI>
+                <HTTPMethods>GET,HEAD</HTTPMethods>
+            </AllowedURI>
+            <AllowedURI>
+                <URI>/api/am/governance/{version}/swagger.json</URI>
+                <HTTPMethods>GET,HEAD</HTTPMethods>
+            </AllowedURI>
         </AllowedURIs>
+        <BasicAuthBlockedURIs>
+        <!--Configure Basic Auth blocked URIs of REST API. URIs included cannot be invoked with basic auth-->
+        {% if apim.rest_api.basic_auth_blocked_uri is defined %}
+            {% for uri in apim.rest_api.basic_auth_blocked_uri %}
+                <BasicAuthBlockedURI>
+                    <URI>{{uri.uri_path}}</URI>
+                    <HTTPMethods>{{uri.http_method}}</HTTPMethods>
+                </BasicAuthBlockedURI>
+            {% endfor %}
+        {% endif %}
+        </BasicAuthBlockedURIs>
         <ETagSkipList>
             <ETagSkipURI>
                 <URI>/api/am/devportal/{version}/apis</URI>

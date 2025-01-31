@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- ~ Copyright (c) 2020, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ ~ Copyright (c) 2025, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
  ~
  ~ Licensed under the Apache License, Version 2.0 (the "License");
  ~ you may not use this file except in compliance with the License.
@@ -30,9 +30,12 @@
     <bean class="org.springframework.beans.factory.config.PreferencesPlaceholderConfigurer"/>
     <jaxrs:server id="services" address="/">
         <jaxrs:serviceBeans>
+            <bean class="org.wso2.carbon.apimgt.governance.rest.api.gateway.SwaggerYamlApi"/>
             <bean class="org.wso2.carbon.apimgt.governance.rest.api.HealthzApi"/>
             <bean class="org.wso2.carbon.apimgt.governance.rest.api.RulesetsApi"/>
             <bean class="org.wso2.carbon.apimgt.governance.rest.api.GovernancePoliciesApi"/>
+            <bean class="org.wso2.carbon.apimgt.governance.rest.api.ArtifactComplianceApi"/>
+            <bean class="org.wso2.carbon.apimgt.governance.rest.api.PolicyAdherenceApi"/>
         </jaxrs:serviceBeans>
         <jaxrs:providers>
             <bean class="com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider"/>

@@ -72,18 +72,27 @@ import org.wso2.carbon.apimgt.api.model.SwaggerData;
 import org.wso2.carbon.apimgt.api.model.Tier;
 import org.wso2.carbon.apimgt.api.model.URITemplate;
 import org.wso2.carbon.apimgt.api.model.policy.APIPolicy;
+import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
+import org.wso2.carbon.apimgt.governance.api.model.ArtifactType;
+import org.wso2.carbon.apimgt.governance.api.model.GovernableState;
+import org.wso2.carbon.apimgt.governance.api.model.RuleType;
+import org.wso2.carbon.apimgt.governance.api.service.APIMGovernanceService;
 import org.wso2.carbon.apimgt.impl.APIConstants;
+import org.wso2.carbon.apimgt.impl.APIManagerFactory;
 import org.wso2.carbon.apimgt.impl.definitions.AsyncApiParser;
 import org.wso2.carbon.apimgt.impl.definitions.GraphQLSchemaDefinition;
 import org.wso2.carbon.apimgt.impl.definitions.OAS2Parser;
 import org.wso2.carbon.apimgt.impl.definitions.OAS3Parser;
 import org.wso2.carbon.apimgt.impl.definitions.OASParserUtil;
+import org.wso2.carbon.apimgt.impl.importexport.APIImportExportException;
+import org.wso2.carbon.apimgt.impl.importexport.ExportFormat;
 import org.wso2.carbon.apimgt.impl.utils.APIUtil;
 import org.wso2.carbon.apimgt.impl.utils.APIVersionStringComparator;
 import org.wso2.carbon.apimgt.impl.wsdl.SequenceGenerator;
 import org.wso2.carbon.apimgt.rest.api.common.RestApiCommonUtil;
 import org.wso2.carbon.apimgt.rest.api.common.RestApiConstants;
 import org.wso2.carbon.apimgt.rest.api.common.annotations.Scope;
+import org.wso2.carbon.apimgt.rest.api.publisher.v1.common.internal.ServiceReferenceHolder;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIInfoAdditionalPropertiesDTO;
 import org.wso2.carbon.apimgt.rest.api.publisher.v1.dto.APIInfoAdditionalPropertiesMapDTO;
@@ -106,6 +115,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -126,6 +136,9 @@ public class PublisherCommonUtils {
 
     private static final Log log = LogFactory.getLog(PublisherCommonUtils.class);
     public static final String SESSION_TIMEOUT_CONFIG_KEY = "sessionTimeOut";
+    static APIMGovernanceService apimGovernanceService = ServiceReferenceHolder.getInstance()
+            .getAPIMGovernanceService();
+
 
     /**
      * Update API and API definition.
@@ -169,11 +182,21 @@ public class PublisherCommonUtils {
 
         API apiToUpdate = prepareForUpdateApi(originalAPI, apiDtoToUpdate, apiProvider, tokenScopes);
         String organization = RestApiCommonUtil.getLoggedInUserTenantDomain();
+        ArtifactType artifactType = ArtifactType.ASYNC_API;
         if (!PublisherCommonUtils.isStreamingAPI(apiDtoToUpdate) && !APIConstants.APITransportType.GRAPHQL.toString()
                 .equalsIgnoreCase(apiDtoToUpdate.getType().toString())) {
+            artifactType = ArtifactType.REST_API;
             prepareForUpdateSwagger(originalAPI.getUuid(), response, false, apiProvider, organization,
                     response.getParser(), apiToUpdate, generateSoapToRestSequences);
+        } else if (APIConstants.APITransportType.GRAPHQL.toString().equalsIgnoreCase(
+                apiDtoToUpdate.getType().toString())) {
+            artifactType = ArtifactType.GRAPHQL_API;
         }
+
+        log.info("******* Gov Check: UpdateAPIDefinition *******");
+        checkGovernanceCompliance(originalAPI.getUuid(), GovernableState.API_UPDATE, artifactType, organization,
+                null, null);
+
         apiProvider.updateAPI(apiToUpdate, originalAPI);
         return apiProvider.getAPIbyUUID(originalAPI.getUuid(), originalAPI.getOrganization());
     }
@@ -194,6 +217,9 @@ public class PublisherCommonUtils {
             throws ParseException, CryptoException, APIManagementException, FaultGatewaysException {
 
         API apiToUpdate = prepareForUpdateApi(originalAPI, apiDtoToUpdate, apiProvider, tokenScopes);
+        log.info("******* Gov Check: PublisherCommonUtils updateApi *******");
+        checkGovernanceCompliance(originalAPI.getUuid(), GovernableState.API_UPDATE,
+                ArtifactType.fromString(originalAPI.getType()), originalAPI.getOrganization(), null, null);
         apiProvider.updateAPI(apiToUpdate, originalAPI);
         API apiUpdated = apiProvider.getAPIbyUUID(originalAPI.getUuid(), originalAPI.getOrganization());
         if (apiUpdated != null && !StringUtils.isEmpty(apiUpdated.getEndpointConfig())) {
@@ -1095,6 +1121,7 @@ public class PublisherCommonUtils {
                                                            String organization)
             throws APIManagementException, CryptoException {
         String name = apiDto.getName();
+        ArtifactType artifactType = null;
         apiDto.setName(name.trim().replaceAll("\\s{2,}", " "));
         if (APIDTO.TypeEnum.ASYNC.equals(apiDto.getType())) {
             throw new APIManagementException("ASYNC API type does not support API creation from scratch",
@@ -1193,10 +1220,12 @@ public class PublisherCommonUtils {
             SwaggerData swaggerData = new SwaggerData(apiToAdd);
             String apiDefinition = oasParser.generateAPIDefinition(swaggerData);
             apiToAdd.setSwaggerDefinition(apiDefinition);
+            artifactType = ArtifactType.REST_API;
         } else {
             AsyncApiParser asyncApiParser = new AsyncApiParser();
             String asyncApiDefinition = asyncApiParser.generateAsyncAPIDefinition(apiToAdd);
             apiToAdd.setAsyncApiDefinition(asyncApiDefinition);
+            artifactType = ArtifactType.ASYNC_API;
         }
 
         apiToAdd.setOrganization(organization);
@@ -1207,6 +1236,9 @@ public class PublisherCommonUtils {
         }
 
         //adding the api
+        log.info("******* Gov Check: addAPIWithGeneratedSwaggerDefinition *******");
+        checkGovernanceCompliance(apiDto.getId(),  GovernableState.API_CREATE, artifactType, organization,
+                null, null);
         apiProvider.addAPI(apiToAdd);
         return apiToAdd;
     }
@@ -1740,6 +1772,9 @@ public class PublisherCommonUtils {
         //updating APi with the new AsyncAPI definition
         existingAPI.setAsyncApiDefinition(apiDefinition);
         apiProvider.saveAsyncApiDefinition(existingAPI, apiDefinition);
+        log.info("******* Gov Check: PublisherCommonUtils updateAsyncAPIDefinition *******");
+        checkGovernanceCompliance(existingAPI.getUuid(), GovernableState.API_UPDATE, ArtifactType.ASYNC_API,
+                organization, null, null);
         apiProvider.updateAPI(existingAPI, oldapi);
         //retrieves the updated AsyncAPI definition
         return apiProvider.getAsyncAPIDefinition(existingAPI.getId().getUUID(), organization);
@@ -1787,6 +1822,9 @@ public class PublisherCommonUtils {
         //Update API is called to update URITemplates and scopes of the API
         API unModifiedAPI = apiProvider.getAPIbyUUID(apiId, organization);
         existingAPI.setStatus(unModifiedAPI.getStatus());
+        log.info("******* Gov Check: PublisherCommonUtils updateSwagger *******");
+        checkGovernanceCompliance(apiId, GovernableState.API_UPDATE, ArtifactType.REST_API, organization,
+                null, null);
         apiProvider.updateAPI(existingAPI, unModifiedAPI);
 
         //retrieves the updated swagger definition
@@ -1991,6 +2029,10 @@ public class PublisherCommonUtils {
         originalAPI.setUriTemplates(uriTemplates);
 
         apiProvider.saveGraphqlSchemaDefinition(originalAPI.getUuid(), schemaDefinition, originalAPI.getOrganization());
+        log.info("******* Gov Check: PublisherCommonUtils addGraphQLSchema *******");
+        checkGovernanceCompliance(originalAPI.getUuid(), GovernableState.API_UPDATE, ArtifactType.GRAPHQL_API,
+                originalAPI.getOrganization(), null, null);
+
         apiProvider.updateAPI(originalAPI, oldApi);
 
         return originalAPI;
@@ -2524,6 +2566,9 @@ public class PublisherCommonUtils {
         List<SOAPToRestSequence> list = SequenceGenerator.generateSequencesFromSwagger(swaggerContent);
         API updatedAPI = apiProvider.getAPIbyUUID(api.getUuid(), organization);
         updatedAPI.setSoapToRestSequences(list);
+        log.info("******* Gov Check: PublisherCommonUtils updateAPIBySettingGenerateSequencesFromSwagger *******");
+        checkGovernanceCompliance(updatedAPI.getUuid(), GovernableState.API_UPDATE, ArtifactType.API, organization,
+                null, null);
         return apiProvider.updateAPI(updatedAPI, api);
     }
 
@@ -2664,7 +2709,9 @@ public class PublisherCommonUtils {
                         apiToAdd.getGatewayVendor())));
         apiToAdd.setOrganization(organization);
         apiToAdd.setAsyncApiDefinition(definitionToAdd);
-
+        log.info("******* Gov Check: importAsyncAPIWithDefinition *******");
+        checkGovernanceCompliance(apiToAdd.getUuid(), GovernableState.API_CREATE, ArtifactType.ASYNC_API, organization,
+                null, null);
         apiProvider.addAPI(apiToAdd);
         return apiProvider.getAPIbyUUID(apiToAdd.getUuid(), organization);
     }
@@ -2709,5 +2756,63 @@ public class PublisherCommonUtils {
             }
         }
         return errorPropertyNames;
+    }
+
+    public static String validationArtifact(API api) {
+        try {
+            APIDTO dto = APIMappingUtil.fromAPItoDTO(api);
+            return new ObjectMapper().writeValueAsString(dto);
+        } catch (APIManagementException e) {
+            log.error("Error occurred while validating the API artifact", e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        return "";
+    }
+
+    public static void checkGovernanceCompliance(String artifactID, GovernableState state,
+                                                 ArtifactType type, String organization, String revisionId,
+                                                 Map<RuleType, String> artifactProjectContent) {
+        try {
+            if (apimGovernanceService.isPoliciesWithBlockingActionExist(artifactID, type, state, organization)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("Blocking policies exist for the API. Evaluating compliance synchronously.");
+                }
+                apimGovernanceService.evaluateComplianceSync(artifactID, revisionId, type, state,
+                        artifactProjectContent, organization);
+                log.info(artifactID);
+            } else {
+                if (log.isDebugEnabled()) {
+                    log.debug("No blocking policies exist for the API. Evaluating compliance asynchronously for " +
+                            "artifactID " + artifactID);
+                }
+                apimGovernanceService.evaluateComplianceAsync(artifactID, ArtifactType.REST_API,
+                        state, organization);
+            }
+        } catch (GovernanceException e) {
+            log.error("Error occurred while executing governance ", e);
+        }
+    }
+
+    public static byte[] getAPIProject(String apiId, String organization) throws GovernanceException {
+        synchronized (apiId.intern()) {
+            try {
+                APIIdentifier apiIdentifier = APIMappingUtil.getAPIIdentifierFromUUID(apiId);
+                String userName = apiIdentifier.getProviderName();
+                APIProvider apiProvider = APIManagerFactory.getInstance().getAPIProvider(userName);
+
+                API api = apiProvider.getAPIbyUUID(apiId, organization);
+                api.setUuid(apiId);
+                apiIdentifier.setUuid(apiId);
+                APIDTO apiDtoToReturn = APIMappingUtil.fromAPItoDTO(api, true, apiProvider);
+                File apiProject = ExportUtils.exportApi(
+                        apiProvider, apiIdentifier, apiDtoToReturn, api, userName,
+                        ExportFormat.YAML, true, true, StringUtils.EMPTY, organization
+                ); // returns zip file
+                return Files.readAllBytes(apiProject.toPath());
+            } catch (APIManagementException | APIImportExportException | IOException e) {
+                throw new GovernanceException("Error while getting the API project with ID: " + apiId, e);
+            }
+        }
     }
 }

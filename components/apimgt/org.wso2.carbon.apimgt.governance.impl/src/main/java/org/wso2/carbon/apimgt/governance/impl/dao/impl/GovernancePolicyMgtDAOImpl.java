@@ -31,14 +31,13 @@ import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyList;
 import org.wso2.carbon.apimgt.governance.api.model.RuleCategory;
 import org.wso2.carbon.apimgt.governance.api.model.RuleType;
 import org.wso2.carbon.apimgt.governance.api.model.Ruleset;
-import org.wso2.carbon.apimgt.governance.api.model.RulesetInfo;
 import org.wso2.carbon.apimgt.governance.api.model.Severity;
 import org.wso2.carbon.apimgt.governance.impl.dao.GovernancePolicyMgtDAO;
 import org.wso2.carbon.apimgt.governance.impl.dao.constants.SQLConstants;
 import org.wso2.carbon.apimgt.governance.impl.util.GovernanceDBUtil;
 import org.wso2.carbon.apimgt.governance.impl.util.GovernanceUtil;
 
-import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -46,7 +45,9 @@ import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of the GovernancePolicyMgtDAO interface.
@@ -55,21 +56,26 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
 
     private static final Log log = LogFactory.getLog(GovernancePolicyMgtDAOImpl.class);
 
-    private static GovernancePolicyMgtDAO INSTANCE = null;
-
     private GovernancePolicyMgtDAOImpl() {
+
     }
 
     /**
-     * Get an instance of GovernancePolicyMgtDAO
+     * Bill Pugh Singleton Implementation
+     */
+    private static class SingletonHelper {
+
+        private static final GovernancePolicyMgtDAO INSTANCE = new GovernancePolicyMgtDAOImpl();
+    }
+
+    /**
+     * Get instance of GovernancePolicyMgtDAOImpl
      *
-     * @return GovernancePolicyMgtDAO instance
+     * @return GovernancePolicyMgtDAOImpl instance
      */
     public static GovernancePolicyMgtDAO getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new GovernancePolicyMgtDAOImpl();
-        }
-        return INSTANCE;
+
+        return SingletonHelper.INSTANCE;
     }
 
     /**
@@ -82,7 +88,6 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
     @Override
     public GovernancePolicy createGovernancePolicy(String organization, GovernancePolicy
             governancePolicy) throws GovernanceException {
-        List<RulesetInfo> rulesetInfoList = new ArrayList<>();
         List<String> rulesetIds;
         Timestamp timestamp;
         List<String> labels;
@@ -157,7 +162,7 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                     prepStmt.executeBatch();
                 }
                 connection.commit();
-                return getGovernancePolicyByID(organization, governancePolicy.getId()); // to return saved policy
+                return getGovernancePolicyByID(governancePolicy.getId()); // to return saved policy
             } catch (SQLException e) {
                 connection.rollback();
                 throw e;
@@ -173,7 +178,6 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
         }
     }
 
-
     /**
      * Get Governance Policy by Name
      *
@@ -183,7 +187,9 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
      * @throws GovernanceException If an error occurs while retrieving the policy
      */
     @Override
-    public GovernancePolicy getGovernancePolicyByName(String organization, String policyName) throws GovernanceException {
+    public GovernancePolicy getGovernancePolicyByName(String organization, String policyName)
+            throws GovernanceException {
+
         GovernancePolicy policy = null;
         try (Connection connection = GovernanceDBUtil.getConnection();
              PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.GET_POLICY_BY_NAME)) {
@@ -211,18 +217,16 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
     /**
      * Get Governance Policy by ID
      *
-     * @param organization Organization
-     * @param policyID     Policy ID
+     * @param policyID Policy ID
      * @return GovernancePolicy
      * @throws GovernanceException If an error occurs while retrieving the policy
      */
     @Override
-    public GovernancePolicy getGovernancePolicyByID(String organization, String policyID) throws GovernanceException {
+    public GovernancePolicy getGovernancePolicyByID(String policyID) throws GovernanceException {
         GovernancePolicy policy = null;
         try (Connection connection = GovernanceDBUtil.getConnection();
              PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.GET_POLICY_BY_ID)) {
-            prepStmt.setString(1, organization);
-            prepStmt.setString(2, policyID);
+            prepStmt.setString(1, policyID);
             try (ResultSet resultSet = prepStmt.executeQuery()) {
                 if (resultSet.next()) {
                     policy = new GovernancePolicy();
@@ -241,8 +245,7 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
             }
             return policy;
         } catch (SQLException e) {
-            throw new GovernanceException(GovernanceExceptionCodes.ERROR_WHILE_RETRIEVING_POLICY_BY_ID, e, policyID,
-                    organization);
+            throw new GovernanceException(GovernanceExceptionCodes.ERROR_WHILE_RETRIEVING_POLICY_BY_ID, e, policyID);
         }
     }
 
@@ -305,8 +308,7 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                 prepStmt.setString(2, organization);
                 int rowsAffected = prepStmt.executeUpdate();
                 if (rowsAffected == 0) {
-                    throw new GovernanceException(GovernanceExceptionCodes.POLICY_NOT_FOUND,
-                            policyId, organization);
+                    throw new GovernanceException(GovernanceExceptionCodes.POLICY_NOT_FOUND, policyId);
                 }
                 connection.commit();
             } catch (SQLException e) {
@@ -366,6 +368,18 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                 List<String> rulesetsToRemove = new ArrayList<>(existingRulesets);
                 rulesetsToAdd.removeAll(existingRulesets);
                 rulesetsToRemove.removeAll(rulesetsToBeUpdatedList);
+                // Remove old rulesets
+                if (!rulesetsToRemove.isEmpty()) {
+                    try (PreparedStatement deleteStatement =
+                                 connection.prepareStatement(SQLConstants.DELETE_POLICY_RULESET_MAPPING)) {
+                        for (String rulesetId : rulesetsToRemove) {
+                            deleteStatement.setString(1, policyId);
+                            deleteStatement.setString(2, rulesetId);
+                            deleteStatement.addBatch();
+                        }
+                        deleteStatement.executeBatch();
+                    }
+                }
                 // Add new rulesets
                 if (!rulesetsToAdd.isEmpty()) {
                     try (PreparedStatement insertStatement =
@@ -379,26 +393,14 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                         insertStatement.executeBatch();
                     }
                 }
-                // Remove old rulesets
-                if (!rulesetsToRemove.isEmpty()) {
-                    try (PreparedStatement deleteStatement =
-                                 connection.prepareStatement(SQLConstants.DELETE_POLICY_RULESET_MAPPING)) {
-                        for (String rulesetId : rulesetsToRemove) {
-                            deleteStatement.setString(1, policyId);
-                            deleteStatement.setString(2, rulesetId);
-                            deleteStatement.addBatch();
-                        }
-                        deleteStatement.executeBatch();
-                    }
-                }
-
                 updateLabelsForPolicy(policyId, governancePolicy, connection);
                 updateGovernableStatesForPolicy(policyId, governancePolicy, connection);
                 updateActionsForPolicy(policyId, governancePolicy, connection);
+                deleteComplianceEvaluationResultsForPolicy(policyId, connection);
 
                 // return updated GovernancePolicy object
                 connection.commit();
-                return getGovernancePolicyByID(organization, policyId);
+                return getGovernancePolicyByID(policyId);
             } catch (SQLException e) {
                 connection.rollback();
                 throw e;
@@ -436,6 +438,18 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
         List<GovernableState> statesToRemove = new ArrayList<>(existingStates);
         statesToAdd.removeAll(existingStates);
         statesToRemove.removeAll(statesToBeUpdated);
+        // Remove old states
+        if (!statesToRemove.isEmpty()) {
+            try (PreparedStatement deleteStatement =
+                         connection.prepareStatement(SQLConstants.DELETE_GOVERNANCE_POLICY_STATE_MAPPING)) {
+                for (GovernableState state : statesToRemove) {
+                    deleteStatement.setString(1, policyId);
+                    deleteStatement.setString(2, String.valueOf(state));
+                    deleteStatement.addBatch();
+                }
+                deleteStatement.executeBatch();
+            }
+        }
         // Add new states
         if (!statesToAdd.isEmpty()) {
             try (PreparedStatement insertStatement =
@@ -449,18 +463,7 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                 insertStatement.executeBatch();
             }
         }
-        // Remove old states
-        if (!statesToRemove.isEmpty()) {
-            try (PreparedStatement deleteStatement =
-                         connection.prepareStatement(SQLConstants.DELETE_GOVERNANCE_POLICY_STATE_MAPPING)) {
-                for (GovernableState state : statesToRemove) {
-                    deleteStatement.setString(1, policyId);
-                    deleteStatement.setString(2, String.valueOf(state));
-                    deleteStatement.addBatch();
-                }
-                deleteStatement.executeBatch();
-            }
-        }
+
     }
 
     /**
@@ -490,6 +493,18 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
         List<String> labelsToRemove = new ArrayList<>(existingLabels);
         labelsToAdd.removeAll(existingLabels);
         labelsToRemove.removeAll(labelsToBeUpdated);
+        // Remove old labels
+        if (!labelsToRemove.isEmpty()) {
+            try (PreparedStatement deleteStatement =
+                         connection.prepareStatement(SQLConstants.DELETE_GOVERNANCE_POLICY_LABEL_MAPPING)) {
+                for (String label : labelsToRemove) {
+                    deleteStatement.setString(1, policyId);
+                    deleteStatement.setString(2, label);
+                    deleteStatement.addBatch();
+                }
+                deleteStatement.executeBatch();
+            }
+        }
         // Add new labels
         if (!labelsToAdd.isEmpty()) {
             try (PreparedStatement insertStatement =
@@ -501,18 +516,6 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                     insertStatement.addBatch();
                 }
                 insertStatement.executeBatch();
-            }
-        }
-        // Remove old labels
-        if (!labelsToRemove.isEmpty()) {
-            try (PreparedStatement deleteStatement =
-                         connection.prepareStatement(SQLConstants.DELETE_GOVERNANCE_POLICY_LABEL_MAPPING)) {
-                for (String label : labelsToRemove) {
-                    deleteStatement.setString(1, policyId);
-                    deleteStatement.setString(2, label);
-                    deleteStatement.addBatch();
-                }
-                deleteStatement.executeBatch();
             }
         }
     }
@@ -548,6 +551,20 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
         List<GovernanceAction> actionsToRemove = new ArrayList<>(existingActions);
         actionsToAdd.removeAll(existingActions);
         actionsToRemove.removeAll(actionsToBeUpdated);
+        // Remove old actions
+        if (!actionsToRemove.isEmpty()) {
+            try (PreparedStatement deleteStatement =
+                         connection.prepareStatement(SQLConstants.DELETE_GOVERNANCE_POLICY_ACTION_MAPPING)) {
+                for (GovernanceAction action : actionsToRemove) {
+                    deleteStatement.setString(1, policyId);
+                    deleteStatement.setString(2, String.valueOf(action.getGovernableState()));
+                    deleteStatement.setString(3, String.valueOf(action.getRuleSeverity()));
+                    deleteStatement.setString(4, String.valueOf(action.getType()));
+                    deleteStatement.addBatch();
+                }
+                deleteStatement.executeBatch();
+            }
+        }
         // Add new actions
         if (!actionsToAdd.isEmpty()) {
             try (PreparedStatement insertStatement =
@@ -563,20 +580,7 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                 insertStatement.executeBatch();
             }
         }
-        // Remove old actions
-        if (!actionsToRemove.isEmpty()) {
-            try (PreparedStatement deleteStatement =
-                         connection.prepareStatement(SQLConstants.DELETE_GOVERNANCE_POLICY_ACTION_MAPPING)) {
-                for (GovernanceAction action : actionsToRemove) {
-                    deleteStatement.setString(1, policyId);
-                    deleteStatement.setString(2, String.valueOf(action.getGovernableState()));
-                    deleteStatement.setString(3, String.valueOf(action.getRuleSeverity()));
-                    deleteStatement.setString(4, String.valueOf(action.getType()));
-                    deleteStatement.addBatch();
-                }
-                deleteStatement.executeBatch();
-            }
-        }
+
     }
 
     /**
@@ -621,6 +625,22 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
             }
         }
         return labels;
+    }
+
+    /**
+     * Delete Compliance Evaluation Results for a Policy
+     *
+     * @param policyId   Policy ID
+     * @param connection DB Connection
+     * @throws SQLException If an error occurs while deleting the results (Captured at higher level)
+     */
+    private void deleteComplianceEvaluationResultsForPolicy(String policyId, Connection connection)
+            throws SQLException {
+        try (PreparedStatement prepStmt = connection.prepareStatement
+                (SQLConstants.DELETE_GOV_COMPLIANCE_EVALUATION_RESULT_BY_POLICY)) {
+            prepStmt.setString(1, policyId);
+            prepStmt.executeUpdate();
+        }
     }
 
     /**
@@ -693,8 +713,9 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                 while (rs.next()) {
                     Ruleset ruleset = new Ruleset();
                     ruleset.setId(rs.getString("RULESET_ID"));
+                    ruleset.setName(rs.getString("NAME"));
                     byte[] rulesetContent = rs.getBytes("RULESET_CONTENT");
-                    ruleset.setRulesetContent(new ByteArrayInputStream(rulesetContent));
+                    ruleset.setRulesetContent(new String(rulesetContent, StandardCharsets.UTF_8));
                     ruleset.setRuleCategory(RuleCategory.fromString(
                             rs.getString("RULE_CATEGORY")));
                     ruleset.setRuleType(RuleType.fromString(rs.getString("RULE_TYPE")));
@@ -709,6 +730,37 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
                     ERROR_WHILE_RETRIEVING_RULESETS_ASSOCIATED_WITH_POLICY,
                     e, policyId);
         }
+    }
+
+
+    /**
+     * Get the list of policies by label
+     *
+     * @param label        label
+     * @param organization organization
+     * @return Map of Policy IDs, Policy Names
+     * @throws GovernanceException If an error occurs while getting the policies
+     */
+    @Override
+    public Map<String, String> getPoliciesByLabel(String label, String organization)
+            throws GovernanceException {
+        Map<String, String> policyIds = new HashMap();
+        try (Connection connection = GovernanceDBUtil.getConnection();
+             PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.GET_POLICIES_BY_LABEL)) {
+            prepStmt.setString(1, label);
+            prepStmt.setString(2, organization);
+            try (ResultSet resultSet = prepStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    policyIds.put(resultSet.getString("POLICY_ID"),
+                            resultSet.getString("NAME"));
+                }
+            }
+            return policyIds;
+        } catch (SQLException e) {
+            throw new GovernanceException(GovernanceExceptionCodes.ERROR_WHILE_RETRIEVING_POLICIES, e,
+                    organization);
+        }
+
     }
 
     /**
@@ -741,6 +793,31 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
     }
 
     /**
+     * Get Policies without labels
+     *
+     * @param organization Organization
+     * @return Map of Policy IDs, Policy Names
+     */
+    public Map<String, String> getPoliciesWithoutLabels(String organization)
+            throws GovernanceException {
+        Map<String, String> policyIds = new HashMap<>();
+        try (Connection connection = GovernanceDBUtil.getConnection();
+             PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.GET_POLICIES_WITHOUT_LABELS)) {
+            prepStmt.setString(1, organization);
+            try (ResultSet resultSet = prepStmt.executeQuery()) {
+                while (resultSet.next()) {
+                    policyIds.put(resultSet.getString("POLICY_ID"),
+                            resultSet.getString("NAME"));
+                }
+            }
+            return policyIds;
+        } catch (SQLException e) {
+            throw new GovernanceException(GovernanceExceptionCodes.ERROR_WHILE_RETRIEVING_POLICIES,
+                    organization);
+        }
+    }
+
+    /**
      * Get Policies without labels by state
      *
      * @param state        Governable State for the policy
@@ -748,10 +825,12 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
      * @return List of Policy IDs
      */
     @Override
-    public List<String> getPoliciesWithoutLabelsByState(GovernableState state, String organization) throws GovernanceException {
+    public List<String> getPoliciesWithoutLabelsByState(GovernableState state, String organization)
+            throws GovernanceException {
         List<String> policyIds = new ArrayList<>();
         try (Connection connection = GovernanceDBUtil.getConnection();
-             PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.GET_POLICIES_WITHOUT_LABELS_BY_STATE)) {
+             PreparedStatement prepStmt = connection.prepareStatement(SQLConstants
+                     .GET_POLICIES_WITHOUT_LABELS_BY_STATE)) {
             prepStmt.setString(1, String.valueOf(state));
             prepStmt.setString(2, organization);
             try (ResultSet resultSet = prepStmt.executeQuery()) {
@@ -805,7 +884,6 @@ public class GovernancePolicyMgtDAOImpl implements GovernancePolicyMgtDAO {
      */
     @Override
     public List<String> getLabelsByPolicyId(String policyId) throws GovernanceException {
-        List<String> labels = new ArrayList<>();
         try (Connection connection = GovernanceDBUtil.getConnection()) {
             return getLabelsByPolicyId(policyId, connection);
         } catch (SQLException e) {

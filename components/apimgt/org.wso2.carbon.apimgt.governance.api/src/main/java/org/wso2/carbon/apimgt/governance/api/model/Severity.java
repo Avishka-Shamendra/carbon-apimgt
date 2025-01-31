@@ -18,9 +18,6 @@
 
 package org.wso2.carbon.apimgt.governance.api.model;
 
-import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
-import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
-
 /**
  * This class represents a governance rule Severity
  */
@@ -30,13 +27,13 @@ public enum Severity {
     INFO;
 
     public static Severity fromString(String severityString) {
-        if ("error".equals(severityString)) {
+        if ("error".equalsIgnoreCase(severityString)) {
             return Severity.ERROR;
-        } else if ("warn".equals(severityString)) {
+        } else if ("warn".equalsIgnoreCase(severityString)) {
             return Severity.WARN;
-        } else if ("info".equals(severityString)) {
+        } else if ("info".equalsIgnoreCase(severityString)) {
             return Severity.INFO;
         }
-        return Severity.WARN;
+        return null;
     }
 }

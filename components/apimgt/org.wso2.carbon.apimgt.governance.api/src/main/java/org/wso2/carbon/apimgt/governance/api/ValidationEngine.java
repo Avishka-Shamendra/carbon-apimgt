@@ -20,10 +20,11 @@ package org.wso2.carbon.apimgt.governance.api;
 
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
 import org.wso2.carbon.apimgt.governance.api.model.Rule;
+import org.wso2.carbon.apimgt.governance.api.model.RuleViolation;
 import org.wso2.carbon.apimgt.governance.api.model.Ruleset;
 
-import java.io.InputStream;
 import java.util.List;
+
 
 /**
  * This class represents a Validation Engine. This can be extended to implement a specific validation engine like
@@ -41,11 +42,21 @@ public interface ValidationEngine {
     boolean isRulesetValid(Ruleset ruleset) throws GovernanceException;
 
     /**
-     * Extract rules from a ruleset content
+     * Extract rules from a ruleset
      *
-     * @param rulesetContent Ruleset content
+     * @param ruleset Ruleset
      * @return List of rules
      * @throws GovernanceException If an error occurs while extracting rules
      */
-    List<Rule> extractRulesFromRuleset(InputStream rulesetContent) throws GovernanceException;
+    List<Rule> extractRulesFromRuleset(Ruleset ruleset) throws GovernanceException;
+
+    /**
+     * Validate a target against a ruleset
+     *
+     * @param target  Target to be validated
+     * @param ruleset Ruleset
+     * @return List of rule violations
+     * @throws GovernanceException If an error occurs while validating the target
+     */
+    List<RuleViolation> validate(String target, Ruleset ruleset) throws GovernanceException;
 }

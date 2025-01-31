@@ -19,17 +19,21 @@
 package org.wso2.carbon.apimgt.governance.engine;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.osgi.service.component.annotations.Component;
 import org.wso2.carbon.apimgt.governance.api.ValidationEngine;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.model.Rule;
+import org.wso2.carbon.apimgt.governance.api.model.RuleViolation;
 import org.wso2.carbon.apimgt.governance.api.model.Ruleset;
 import org.wso2.carbon.apimgt.governance.api.model.Severity;
 import org.wso2.carbon.apimgt.governance.impl.util.GovernanceUtil;
+import org.wso2.rule.validator.validator.Validator;
 
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +48,7 @@ import java.util.Map;
         service = ValidationEngine.class
 )
 public class SpectralValidationEngine implements ValidationEngine {
+    private static final Log log = LogFactory.getLog(SpectralValidationEngine.class);
 
     /**
      * Check if a ruleset is valid
@@ -54,20 +59,21 @@ public class SpectralValidationEngine implements ValidationEngine {
      */
     @Override
     public boolean isRulesetValid(Ruleset ruleset) throws GovernanceException {
-        // TODO: Add implementation to validate the ruleset
+        // TODO: Call the Spectral engine to validate the ruleset
+        // Validator.validateRuleset(ruleset.getRulesetContent());
         return true;
     }
 
     /**
-     * Extract rules from a ruleset content
+     * Extract rules from a ruleset
      *
-     * @param rulesetContent Ruleset content
+     * @param ruleset Ruleset
      * @return List of rules
      * @throws GovernanceException If an error occurs while extracting rules
      */
     @Override
-    public List<Rule> extractRulesFromRuleset(InputStream rulesetContent) throws GovernanceException {
-        String ruleContentString = GovernanceUtil.getStringContentFromInputStream(rulesetContent);
+    public List<Rule> extractRulesFromRuleset(Ruleset ruleset) throws GovernanceException {
+        String ruleContentString = ruleset.getRulesetContent();
         Map<String, Object> contentMap = GovernanceUtil.getMapFromYAMLStringContent(ruleContentString);
         List<Rule> rulesList = new ArrayList<>();
 
@@ -109,4 +115,65 @@ public class SpectralValidationEngine implements ValidationEngine {
 
         return rulesList;
     }
+
+    /**
+     * Validate a target against a ruleset
+     *
+     * @param target  Target to be validated
+     * @param ruleset Ruleset
+     * @return List of rule violations
+     * @throws GovernanceException If an error occurs while validating the target
+     */
+    @Override
+    public List<RuleViolation> validate(String target, Ruleset ruleset) throws GovernanceException {
+
+        try {
+
+            String resultJson = Validator.validateDocument(target, ruleset.getRulesetContent());
+            if (log.isDebugEnabled()) {
+                log.debug("Validation success for target: " + target);
+            }
+            return getRuleViolationsFromJsonResponse(resultJson, ruleset);
+        } catch (Throwable e) {
+            log.error("Error occurred while verifying governance compliance ", e);
+            throw new GovernanceException("Error occurred while verifying governance compliance ", e);
+        }
+    }
+
+
+    /**
+     * Get Rule Violations from a JSON response
+     *
+     * @param resultJson JSON response
+     * @param ruleset    Ruleset
+     * @return List of Rule Violations
+     * @throws GovernanceException If an error occurs while getting the rule violations
+     */
+    private List<RuleViolation> getRuleViolationsFromJsonResponse(String resultJson, Ruleset ruleset)
+            throws GovernanceException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        List<RuleViolation> violations = new ArrayList<>();
+        JsonNode jsonNode;
+
+        // Parse JSON string to JsonNode
+        try {
+            jsonNode = objectMapper.readTree(resultJson);
+            // Convert JsonNode to list of Result objects
+            for (JsonNode node : jsonNode) {
+                RuleViolation violation = new RuleViolation();
+                violation.setRuleCode(node.get("ruleName").asText());
+                violation.setViolatedPath(node.get("path").asText());
+                violation.setRuleMessage(node.get("message").asText());
+                violation.setRulesetId(ruleset.getId());
+                violations.add(violation);
+            }
+            return violations;
+        } catch (JsonProcessingException e) {
+            log.error("Error while parsing validation result JSON string", e);
+            throw new GovernanceException("Error while parsing validation result JSON string", e);
+        }
+
+    }
+
+
 }

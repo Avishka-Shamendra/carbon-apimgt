@@ -19,6 +19,7 @@
 package org.wso2.carbon.apimgt.governance.api;
 
 import org.wso2.carbon.apimgt.governance.api.error.GovernanceException;
+import org.wso2.carbon.apimgt.governance.api.model.Rule;
 import org.wso2.carbon.apimgt.governance.api.model.Ruleset;
 import org.wso2.carbon.apimgt.governance.api.model.RulesetInfo;
 import org.wso2.carbon.apimgt.governance.api.model.RulesetList;
@@ -53,12 +54,11 @@ public interface RulesetManager {
     /**
      * Get a Governance Ruleset by ID
      *
-     * @param organization Organization
-     * @param rulesetId    Ruleset ID
+     * @param rulesetId Ruleset ID
      * @return RulesetInfo object
      * @throws GovernanceException If an error occurs while getting the ruleset
      */
-    RulesetInfo getRulesetById(String organization, String rulesetId) throws GovernanceException;
+    RulesetInfo getRulesetById(String rulesetId) throws GovernanceException;
 
     /**
      * Get the content of a Governance Ruleset
@@ -98,4 +98,13 @@ public interface RulesetManager {
      * @throws GovernanceException If an error occurs while getting the ruleset usage
      */
     List<String> getRulesetUsage(String rulesetId) throws GovernanceException;
+
+    /**
+     * Get the rules using the Governance Ruleset
+     *
+     * @param rulesetId Ruleset ID
+     * @return List of rules using the ruleset
+     * @throws GovernanceException If an error occurs while getting the ruleset usage
+     */
+    List<Rule> getRules(String rulesetId) throws GovernanceException;
 }

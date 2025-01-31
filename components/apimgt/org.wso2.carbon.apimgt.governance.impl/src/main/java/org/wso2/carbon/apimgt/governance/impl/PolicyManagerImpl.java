@@ -27,18 +27,20 @@ import org.wso2.carbon.apimgt.governance.api.model.GovernanceActionType;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicy;
 import org.wso2.carbon.apimgt.governance.api.model.GovernancePolicyList;
 import org.wso2.carbon.apimgt.governance.api.model.Ruleset;
+import org.wso2.carbon.apimgt.governance.api.model.Severity;
 import org.wso2.carbon.apimgt.governance.impl.dao.GovernancePolicyMgtDAO;
 import org.wso2.carbon.apimgt.governance.impl.dao.impl.GovernancePolicyMgtDAOImpl;
 import org.wso2.carbon.apimgt.governance.impl.util.GovernanceUtil;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class represents the Governance Policy Manager Implementation
  */
 public class PolicyManagerImpl implements PolicyManager {
 
-    private GovernancePolicyMgtDAO policyMgtDAO;
+    private final GovernancePolicyMgtDAO policyMgtDAO;
 
     public PolicyManagerImpl() {
         policyMgtDAO = GovernancePolicyMgtDAOImpl.getInstance();
@@ -55,23 +57,88 @@ public class PolicyManagerImpl implements PolicyManager {
     @Override
     public GovernancePolicy createGovernancePolicy(String organization, GovernancePolicy
             governancePolicy) throws GovernanceException {
+
         governancePolicy.setId(GovernanceUtil.generateUUID());
+        checkForInvalidActions(governancePolicy);
+        addMissingNotifyActions(governancePolicy);
+
         return policyMgtDAO.createGovernancePolicy(organization, governancePolicy);
+    }
+
+    /**
+     * This checks whether any invalid action such as,
+     * - Actions assigned to invalid governable states
+     * - BLOCK actions are present for API_CREATE and API_UPDATE states
+     *
+     * @param policy Governance Policy
+     * @throws GovernanceException If an error occurs while checking the actions
+     */
+    private void checkForInvalidActions(GovernancePolicy policy)
+            throws GovernanceException {
+
+        List<GovernableState> governableStates = policy.getGovernableStates();
+        List<GovernanceAction> actions = policy.getActions();
+        for (GovernanceAction action : actions) {
+            if (!governableStates.contains(action.getGovernableState())) {
+                throw new GovernanceException(GovernanceExceptionCodes.ERROR_WHILE_ASSIGNING_ACTION_TO_POLICY,
+                        "Invalid governable state found in the policy. Please update the policy");
+            }
+            if (GovernanceActionType.BLOCK.equals(action.getType()) &&
+                    (GovernableState.API_CREATE.equals(action.getGovernableState()) ||
+                            GovernableState.API_UPDATE.equals(action.getGovernableState()))) {
+                throw new GovernanceException(GovernanceExceptionCodes.ERROR_WHILE_ASSIGNING_ACTION_TO_POLICY,
+                        "Creating policies with blocking actions for API" +
+                                " create/update is not allowed. Please update the policy");
+            }
+        }
+
+    }
+
+    /**
+     * This method adds missing notify actions for each governable state
+     *
+     * @param policy Governance Policy
+     */
+    private void addMissingNotifyActions(GovernancePolicy policy) {
+
+        List<GovernableState> governableStates = policy.getGovernableStates();
+        List<GovernanceAction> actions = policy.getActions();
+        for (GovernableState state : governableStates) {
+            for (Severity severity : Severity.values()) {
+                boolean isActionPresent = false;
+                for (GovernanceAction action : actions) {
+                    if (state.equals(action.getGovernableState()) &&
+                            severity.equals(action.getRuleSeverity())) {
+                        isActionPresent = true;
+                        break;
+                    }
+                }
+                if (!isActionPresent) {
+                    GovernanceAction notifyAction = new GovernanceAction();
+                    notifyAction.setType(GovernanceActionType.NOTIFY);
+                    notifyAction.setGovernableState(state);
+                    notifyAction.setRuleSeverity(severity);
+                    actions.add(notifyAction);
+                }
+
+            }
+        }
+        policy.setActions(actions);
     }
 
     /**
      * Get Governance Policy by Name
      *
-     * @param organization Organization
-     * @param policyID     Policy ID
+     * @param policyID Policy ID
      * @return GovernancePolicy
      * @throws GovernanceException If an error occurs while retrieving the policy
      */
     @Override
-    public GovernancePolicy getGovernancePolicyByID(String organization, String policyID) throws GovernanceException {
-        GovernancePolicy policyInfo = policyMgtDAO.getGovernancePolicyByID(organization, policyID);
+    public GovernancePolicy getGovernancePolicyByID(String policyID)
+            throws GovernanceException {
+        GovernancePolicy policyInfo = policyMgtDAO.getGovernancePolicyByID(policyID);
         if (policyInfo == null) {
-            throw new GovernanceException(GovernanceExceptionCodes.POLICY_NOT_FOUND, policyID, organization);
+            throw new GovernanceException(GovernanceExceptionCodes.POLICY_NOT_FOUND, policyID);
         }
         return policyInfo;
     }
@@ -113,6 +180,10 @@ public class PolicyManagerImpl implements PolicyManager {
     public GovernancePolicy updateGovernancePolicy(String policyId, String organization,
                                                    GovernancePolicy governancePolicy)
             throws GovernanceException {
+
+        checkForInvalidActions(governancePolicy);
+        addMissingNotifyActions(governancePolicy);
+
         return policyMgtDAO.updateGovernancePolicy(policyId, organization, governancePolicy);
     }
 
@@ -128,6 +199,31 @@ public class PolicyManagerImpl implements PolicyManager {
         return policyMgtDAO.getRulesetsByPolicyId(policyId);
     }
 
+    /**
+     * Get the list of policies by label
+     *
+     * @param label        label
+     * @param organization organization
+     * @return Map of Policy IDs, Policy Names
+     * @throws GovernanceException If an error occurs while getting the policies
+     */
+    @Override
+    public Map<String, String> getPoliciesByLabel(String label, String organization)
+            throws GovernanceException {
+        return policyMgtDAO.getPoliciesByLabel(label, organization);
+    }
+
+    /**
+     * Get the list of organization wide policies
+     *
+     * @param organization organization
+     * @return Map of Policy IDs, Policy Names
+     * @throws GovernanceException If an error occurs while getting the policies
+     */
+    @Override
+    public Map<String, String> getOrganizationWidePolicies(String organization) throws GovernanceException {
+        return policyMgtDAO.getPoliciesWithoutLabels(organization);
+    }
 
     /**
      * Get the list of policies by label and state
@@ -167,19 +263,18 @@ public class PolicyManagerImpl implements PolicyManager {
      * @throws GovernanceException If an error occurs while checking the presence of blocking action
      */
     @Override
-    public boolean isBlockingActionPresentForState(String policyId, GovernableState state) throws GovernanceException {
+    public boolean isBlockingActionPresentForState(String policyId, GovernableState state)
+            throws GovernanceException {
         boolean isBlockingActionPresent = false;
         List<GovernanceAction> actions = policyMgtDAO.getActionsByPolicyId(policyId);
         for (GovernanceAction action : actions) {
             if (GovernanceActionType.BLOCK
                     .equals(action.getType()) &&
-                    String.valueOf(action.getGovernableState()).equals(state)) {
+                    action.getGovernableState().equals(state)) {
                 isBlockingActionPresent = true;
                 break;
             }
         }
         return isBlockingActionPresent;
     }
-
-
 }

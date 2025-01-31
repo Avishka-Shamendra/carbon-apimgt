@@ -23,8 +23,8 @@
 
     <parent>
         <groupId>org.wso2.carbon.apimgt</groupId>
-        <artifactId>governance</artifactId>
-        <version>9.30.69-SNAPSHOT</version>
+        <artifactId>apimgt</artifactId>
+        <version>9.31.3-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -98,6 +98,8 @@
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
                         <Bundle-Name>${project.artifactId}</Bundle-Name>
+                        <Private-Package>
+                        </Private-Package>
                         <Export-Package>
                             org.wso2.carbon.apimgt.governance.impl.*;version="${carbon.apimgt.version}"
                         </Export-Package>
@@ -106,10 +108,19 @@
                             org.osgi.util.*;version="${imp.package.version.osgi.util}",
                             org.osgi.service.*;version="${imp.package.version.osgi.service}",
                             org.wso2.carbon.utils.*;version="${carbon.kernel.package.import.version.range}",
+                            org.wso2.carbon.context.*;version="${carbon.kernel.package.import.version.range}",
                             *;resolution:=optional
                         </Import-Package>
                     </instructions>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
