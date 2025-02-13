@@ -31,6 +31,8 @@ public class ArtifactInfo {
     private String name;
     private String version;
 
+    private String owner;
+
     public String toKeyString() {
         return artifactRefId + "|" + artifactType + "|" + organization;
     }
@@ -101,5 +103,13 @@ public class ArtifactInfo {
 
     public void setVersion(String version) {
         this.version = version;
+    }
+
+    public String getOwner() {
+        return owner;
+    }
+
+    public void setOwner(String owner) {
+        this.owner = owner;
     }
 }

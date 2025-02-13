@@ -25,9 +25,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyAttachment;
 import org.wso2.carbon.apimgt.governance.api.model.APIMGovernableState;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactType;
 import org.wso2.carbon.apimgt.governance.api.model.DefaultGovPolicy;
+import org.wso2.carbon.apimgt.governance.api.model.DefaultPolicyAttachment;
 import org.wso2.carbon.apimgt.governance.api.model.ExtendedArtifactType;
 import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicy;
 import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyCategory;
@@ -47,6 +49,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -176,6 +179,92 @@ public class APIMGovernanceUtil {
         } catch (APIMGovernanceException e) {
             log.error("Error while retrieving existing policies for organization: " + organization, e);
         }
+    }
+
+    /**
+     * Load default policy attachments from the default policy attachment directory
+     *
+     * @param organization Organization
+     */
+    public static void loadDefaultPolicyAttachments(String organization) {
+        PolicyAttachmentManager policyAttachmentManager = new PolicyAttachmentManager();
+        try {
+            // Define the path to default policy attachments
+            String pathToPolicyAttachments = CarbonUtils.getCarbonHome() + File.separator
+                    + APIMGovernanceConstants.DEFAULT_POLICY_ATTACHMENT_LOCATION;
+            Path defaultPolicyAttachmentPath = Paths.get(pathToPolicyAttachments);
+
+            // Iterate through default policy attachment files
+            Files.list(defaultPolicyAttachmentPath).forEach(path -> {
+                File file = path.toFile();
+                if (file.isFile() && (file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))) {
+                    try {
+                        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+                        DefaultPolicyAttachment defaultPolicyAttachment =
+                                mapper.readValue(file, DefaultPolicyAttachment.class);
+
+                        // Add policy attachment
+                        policyAttachmentManager.createGovernancePolicyAttachment(organization,
+                                getPolicyAttachmentFromDefaultPolicyAttachment
+                                        (defaultPolicyAttachment, organization));
+                    } catch (IOException e) {
+                        log.error("Error while loading default policy attachment from file: " + file.getName(), e);
+                    } catch (APIMGovernanceException e) {
+                        log.error("Error while adding default policy attachment: " + file.getName(), e);
+                    }
+                }
+            });
+        } catch (IOException e) {
+            log.error("Error while accessing default policy attachment directory", e);
+        }
+    }
+
+    /**
+     * Get Policy Attachment from Default Policy Attachment
+     *
+     * @param defaultPolicyAttachment DefaultPolicyAttachment
+     * @param fileName                File name
+     * @param organization            Organization
+     * @return Governance Policy Attachment
+     */
+    public static APIMGovPolicyAttachment getPolicyAttachmentFromDefaultPolicyAttachment(DefaultPolicyAttachment defaultPolicyAttachment,
+                                                                                         String organization) {
+        APIMGovPolicyAttachment policyAttachment = new APIMGovPolicyAttachment();
+        PolicyManager policyManager = new PolicyManager();
+
+        policyAttachment.setName(defaultPolicyAttachment.getName());
+        policyAttachment.setDescription(defaultPolicyAttachment.getDescription());
+        List<String> labels = defaultPolicyAttachment.getLabels();
+        if (labels != null && labels.stream().anyMatch(label -> label
+                .equalsIgnoreCase(APIMGovernanceConstants.GLOBAL_LABEL))) {
+            policyAttachment.setGlobal(true);
+            policyAttachment.setLabels(Collections.emptyList());
+        } else {
+            policyAttachment.setLabels(labels);
+        }
+        policyAttachment.setGovernableStates(defaultPolicyAttachment.getGovernableStates().stream()
+                .map(APIMGovernableState::fromString)
+                .collect(Collectors.toList()));
+        List<String> policyIds = new ArrayList<>();
+        for (String policyName : defaultPolicyAttachment.getPolicyNames()) {
+            try {
+                APIMGovPolicyInfo policyInfo = policyManager.getPolicyByName(policyName, organization);
+                if (policyInfo != null) {
+                    policyIds.add(policyInfo.getId());
+                } else {
+                    log.warn("Provided policy name: " + policyName + " does not exist in organization: "
+                            + organization + ". Skipping policy while creating policy attachment: "
+                            + defaultPolicyAttachment.getName());
+                }
+            } catch (APIMGovernanceException e) {
+                log.error("Error while getting policy ID for policy name: " + policyName, e);
+            }
+        }
+        policyAttachment.setPolicyIds(policyIds);
+        // For now actions are empty, notify actions are set by default by the policy attachment manager down the line
+        policyAttachment.setActions(Collections.emptyList());
+
+        return policyAttachment;
     }
 
     /**
@@ -420,6 +509,26 @@ public class APIMGovernanceUtil {
         }
         return artifactVersion;
     }
+
+    /**
+     * Get artifact owner
+     *
+     * @param artifactRefId Artifact Reference ID (ID of the artifact on APIM side)
+     * @param artifactType  Artifact Type
+     * @param organization  Organization
+     * @return String
+     * @throws APIMGovernanceException If an error occurs while getting the artifact owner
+     */
+    public static String getArtifactOwner(String artifactRefId, ArtifactType artifactType, String organization)
+            throws APIMGovernanceException {
+
+        String artifactOwner = null;
+        if (ArtifactType.API.equals(artifactType)) {
+            artifactOwner = APIMUtil.getAPIOwner(artifactRefId, organization);
+        }
+        return artifactOwner;
+    }
+
 
     /**
      * Get extended artifact type for an artifact

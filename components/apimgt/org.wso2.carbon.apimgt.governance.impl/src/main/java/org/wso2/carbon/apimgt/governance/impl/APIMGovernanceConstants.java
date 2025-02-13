@@ -35,6 +35,8 @@ public class APIMGovernanceConstants {
 
     public static final String DEFAULT_POLICY_LOCATION = "repository" + File.separator
             + "resources" + File.separator + "governance" + File.separator + "default-policies";
+    public static final String DEFAULT_POLICY_ATTACHMENT_LOCATION = "repository" + File.separator
+            + "resources" + File.separator + "governance" + File.separator + "default-policy-attachments";
     public static final String GLOBAL_LABEL = "GLOBAL";
 
 

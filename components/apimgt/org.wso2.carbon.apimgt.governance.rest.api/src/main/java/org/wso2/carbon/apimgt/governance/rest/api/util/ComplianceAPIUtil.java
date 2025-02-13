@@ -88,6 +88,7 @@ public class ComplianceAPIUtil {
         infoDTO.setName(APIMGovernanceUtil.getArtifactName(artifactRefId, artifactType));
         infoDTO.setVersion(APIMGovernanceUtil.getArtifactVersion(artifactRefId, artifactType));
         infoDTO.setType(ArtifactInfoDTO.TypeEnum.valueOf(String.valueOf(artifactType)));
+        infoDTO.setOwner(APIMGovernanceUtil.getArtifactOwner(artifactRefId, artifactType, organization));
         artifactComplianceDetailsDTO.setInfo(infoDTO);
 
         // Get all policy attachments applicable to the artifact within the organization as a map of policy
@@ -321,6 +322,7 @@ public class ComplianceAPIUtil {
         infoDTO.setName(APIMGovernanceUtil.getArtifactName(artifactRefId, artifactType));
         infoDTO.setVersion(APIMGovernanceUtil.getArtifactVersion(artifactRefId, artifactType));
         infoDTO.setType(ArtifactInfoDTO.TypeEnum.valueOf(String.valueOf(artifactType)));
+        infoDTO.setOwner(APIMGovernanceUtil.getArtifactOwner(artifactRefId, artifactType, organization));
         complianceStatus.setInfo(infoDTO);
 
         // Retrieve applicable policy attachments for the current artifact
@@ -333,17 +335,20 @@ public class ComplianceAPIUtil {
             return complianceStatus;
         }
 
+        // Check if the evaluation is pending
+        boolean isEvaluationPending = new ComplianceManager()
+                .isEvaluationPendingForArtifact(artifactRefId, artifactType, organization);
+        if (isEvaluationPending) {
+            complianceStatus.setStatus(ArtifactComplianceStatusDTO.StatusEnum.PENDING);
+            return complianceStatus;
+        }
+
         // Get evaluated policy attachments for the current artifact
         List<String> evaluatedAttachments = complianceManager.getEvaluatedPolicyAttachmentsForArtifact(artifactRefId,
                 artifactType, organization);
 
-        // If the artifact is not evaluated yet, set the compliance status to not applicable/pending and return
+        // If the artifact is not evaluated yet, set the compliance status to not applicable and return
         if (evaluatedAttachments.isEmpty()) {
-            boolean isEvaluationPending = new ComplianceManager()
-                    .isEvaluationPendingForArtifact(artifactRefId, artifactType, organization);
-            if (isEvaluationPending) {
-                complianceStatus.setStatus(ArtifactComplianceStatusDTO.StatusEnum.PENDING);
-            }
             complianceStatus.setStatus(ArtifactComplianceStatusDTO.StatusEnum.NOT_APPLICABLE);
             return complianceStatus;
         }

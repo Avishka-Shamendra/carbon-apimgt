@@ -176,6 +176,18 @@ public class PolicyManager {
     }
 
     /**
+     * Get a Governance Policy by Name
+     *
+     * @param policyName   Policy Name
+     * @param organization Organization
+     * @return PolicyInfo object
+     * @throws APIMGovernanceException If an error occurs while getting the policy
+     */
+    public APIMGovPolicyInfo getPolicyByName(String policyName, String organization) throws APIMGovernanceException {
+        return policyMgtDAO.getPolicyByName(policyName, organization);
+    }
+
+    /**
      * Get the content of a Governance Policy
      *
      * @param policyId     Policy ID

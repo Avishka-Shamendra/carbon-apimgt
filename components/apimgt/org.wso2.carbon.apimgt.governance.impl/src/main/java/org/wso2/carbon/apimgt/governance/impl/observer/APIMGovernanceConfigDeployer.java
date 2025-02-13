@@ -38,6 +38,8 @@ public class APIMGovernanceConfigDeployer extends AbstractAxis2ConfigurationCont
 
         log.info("Starting to load default governance policies.");
         APIMGovernanceUtil.loadDefaultPolicies(tenantDomain);
+        log.info("Starting to load default policy attachments.");
+        APIMGovernanceUtil.loadDefaultPolicyAttachments(tenantDomain);
 
     }
 }
