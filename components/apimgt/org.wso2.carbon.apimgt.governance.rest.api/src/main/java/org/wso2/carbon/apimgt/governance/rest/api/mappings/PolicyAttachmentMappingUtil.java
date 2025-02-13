@@ -21,7 +21,7 @@ package org.wso2.carbon.apimgt.governance.rest.api.mappings;
 import org.wso2.carbon.apimgt.governance.api.model.APIMGovernableState;
 import org.wso2.carbon.apimgt.governance.api.model.APIMGovernanceAction;
 import org.wso2.carbon.apimgt.governance.api.model.APIMGovernanceActionType;
-import org.wso2.carbon.apimgt.governance.api.model.APIMGovernancePolicyAttachment;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyAttachment;
 import org.wso2.carbon.apimgt.governance.api.model.RuleSeverity;
 import org.wso2.carbon.apimgt.governance.impl.APIMGovernanceConstants;
 import org.wso2.carbon.apimgt.governance.rest.api.dto.APIMGovernancePolicyAttachmentDTO;
@@ -43,9 +43,9 @@ public class PolicyAttachmentMappingUtil {
      * @param dto APIMGovernancePolicyAttachmentDTO object
      * @return APIMGovernancePolicyAttachment object
      */
-    public static APIMGovernancePolicyAttachment fromDTOtoGovernancePolicyAttachment
+    public static APIMGovPolicyAttachment fromDTOtoGovernancePolicyAttachment
     (APIMGovernancePolicyAttachmentDTO dto) {
-        APIMGovernancePolicyAttachment attachment = new APIMGovernancePolicyAttachment();
+        APIMGovPolicyAttachment attachment = new APIMGovPolicyAttachment();
         attachment.setId(dto.getId());
         attachment.setName(dto.getName());
         attachment.setDescription(dto.getDescription());
@@ -79,7 +79,7 @@ public class PolicyAttachmentMappingUtil {
      * @return GovernancePolicyDTO object
      */
     public static APIMGovernancePolicyAttachmentDTO fromGovernancePolicyAttachmentToGovernancePolicyAttachmentDTO
-    (APIMGovernancePolicyAttachment attachment) {
+    (APIMGovPolicyAttachment attachment) {
         APIMGovernancePolicyAttachmentDTO attachmentDTO = new APIMGovernancePolicyAttachmentDTO();
         attachmentDTO.setId(attachment.getId());
         attachmentDTO.setName(attachment.getName());

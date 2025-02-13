@@ -19,10 +19,10 @@
 package org.wso2.carbon.apimgt.governance.impl.dao;
 
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
-import org.wso2.carbon.apimgt.governance.api.model.Policy;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyContent;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyInfo;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyList;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicy;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyContent;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyList;
 import org.wso2.carbon.apimgt.governance.api.model.Rule;
 
 import java.util.List;
@@ -42,18 +42,18 @@ public interface PolicyMgtDAO {
      * @return PolicyInfo Created object
      * @throws APIMGovernanceException If an error occurs while creating the policy
      */
-    PolicyInfo createPolicy(Policy policy, List<Rule> rules, String organization) throws APIMGovernanceException;
+    APIMGovPolicyInfo createPolicy(APIMGovPolicy policy, List<Rule> rules, String organization) throws APIMGovernanceException;
 
     /**
      * Update a Governance Policy
      *
      * @param policyId Policy ID
      * @param policy   Policy object
-     * @param rules     List of rules
+     * @param rules    List of rules
      * @return PolicyInfo Updated object
      * @throws APIMGovernanceException If an error occurs while updating the policy
      */
-    PolicyInfo updatePolicy(String policyId, Policy policy, List<Rule> rules, String organization)
+    APIMGovPolicyInfo updatePolicy(String policyId, APIMGovPolicy policy, List<Rule> rules, String organization)
             throws APIMGovernanceException;
 
     /**
@@ -72,7 +72,7 @@ public interface PolicyMgtDAO {
      * @return PolicyList object
      * @throws APIMGovernanceException If an error occurs while getting the policies
      */
-    PolicyList getPolicies(String organization) throws APIMGovernanceException;
+    APIMGovPolicyList getPolicies(String organization) throws APIMGovernanceException;
 
     /**
      * Get a Governance Policy by name
@@ -82,7 +82,7 @@ public interface PolicyMgtDAO {
      * @return PolicyInfo object
      * @throws APIMGovernanceException If an error occurs while getting the policy
      */
-    PolicyInfo getPolicyByName(String name, String organization) throws APIMGovernanceException;
+    APIMGovPolicyInfo getPolicyByName(String name, String organization) throws APIMGovernanceException;
 
     /**
      * Get a Governance Policy by ID
@@ -92,7 +92,7 @@ public interface PolicyMgtDAO {
      * @return PolicyInfo object
      * @throws APIMGovernanceException If an error occurs while getting the policy
      */
-    PolicyInfo getPolicyById(String policyId, String organization) throws APIMGovernanceException;
+    APIMGovPolicyInfo getPolicyById(String policyId, String organization) throws APIMGovernanceException;
 
     /**
      * Search for Governance Policies based on the search criteria
@@ -102,7 +102,7 @@ public interface PolicyMgtDAO {
      * @return PolicyList object
      * @throws APIMGovernanceException If an error occurs while searching for policies
      */
-    PolicyList searchPolicies(Map<String, String> searchCriteria, String organization)
+    APIMGovPolicyList searchPolicies(Map<String, String> searchCriteria, String organization)
             throws APIMGovernanceException;
 
     /**
@@ -113,7 +113,7 @@ public interface PolicyMgtDAO {
      * @return Content of the policy
      * @throws APIMGovernanceException If an error occurs while getting the policy content
      */
-    PolicyContent getPolicyContent(String policyId, String organization) throws APIMGovernanceException;
+    APIMGovPolicyContent getPolicyContent(String policyId, String organization) throws APIMGovernanceException;
 
     /**
      * Get the associated policy attachments for a policy

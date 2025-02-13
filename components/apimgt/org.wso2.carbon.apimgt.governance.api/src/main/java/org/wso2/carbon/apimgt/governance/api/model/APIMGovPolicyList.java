@@ -18,18 +18,33 @@
 
 package org.wso2.carbon.apimgt.governance.api.model;
 
-/**
- * This class represents a governance policy
- */
-public class Policy extends PolicyInfo {
-    private PolicyContent policyContent;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-    public PolicyContent getPolicyContent() {
-        return new PolicyContent(policyContent);
+/**
+ * This class represents a list of governance policies
+ */
+public class APIMGovPolicyList {
+    private Integer count;
+
+    private List<APIMGovPolicyInfo> policyList = new ArrayList<>();
+
+    public Integer getCount() {
+        return count;
     }
 
-    public void setPolicyContent(PolicyContent policyContent) {
-        this.policyContent = new PolicyContent(policyContent);
+    public void setCount(Integer count) {
+        this.count = count;
+    }
+
+    public List<APIMGovPolicyInfo> getPolicyList() {
+
+        return new ArrayList<>(policyList);
+    }
+
+    public void setPolicyList(List<APIMGovPolicyInfo> policyList) {
+
+        this.policyList = Collections.unmodifiableList(new ArrayList<>(policyList));
     }
 }
-

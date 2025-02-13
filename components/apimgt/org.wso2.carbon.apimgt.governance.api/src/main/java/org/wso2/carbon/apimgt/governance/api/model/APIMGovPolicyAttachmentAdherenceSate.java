@@ -21,12 +21,12 @@ package org.wso2.carbon.apimgt.governance.api.model;
 /**
  * This enum represents the adherence state of a policy attachment
  */
-public enum PolicyAttachmentAdherenceSate {
+public enum APIMGovPolicyAttachmentAdherenceSate {
     FOLLOWED,
     VIOLATED,
     UNAPPPLIED;
 
-    public static PolicyAttachmentAdherenceSate fromString(String text) {
+    public static APIMGovPolicyAttachmentAdherenceSate fromString(String text) {
 
         if ("followed".equalsIgnoreCase(text)) {
             return FOLLOWED;

@@ -3,11 +3,11 @@ package org.wso2.carbon.apimgt.governance.rest.api.impl;
 import org.apache.cxf.jaxrs.ext.MessageContext;
 import org.wso2.carbon.apimgt.governance.api.APIMGovernanceAPIConstants;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
-import org.wso2.carbon.apimgt.governance.api.model.APIMGovernancePolicyAttachment;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyAttachment;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactComplianceState;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactInfo;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactType;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyAttachmentAdherenceSate;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyAttachmentAdherenceSate;
 import org.wso2.carbon.apimgt.governance.impl.ComplianceManager;
 import org.wso2.carbon.apimgt.governance.impl.PolicyAttachmentManager;
 import org.wso2.carbon.apimgt.governance.rest.api.PolicyAttachmentAdherenceApiService;
@@ -49,14 +49,14 @@ public class PolicyAttachmentAdherenceApiServiceImpl implements PolicyAttachment
 
         String organization = APIMGovernanceAPIUtil.getValidatedOrganization(messageContext);
         List<String> policyIds = policyAttachmentManager.getGovernancePolicyAttachments(organization)
-                .getGovernancePolicyAttachmentList().stream().map(APIMGovernancePolicyAttachment::getId)
+                .getGovernancePolicyAttachmentList().stream().map(APIMGovPolicyAttachment::getId)
                 .collect(Collectors.toList());
 
-        Map<PolicyAttachmentAdherenceSate, List<String>> adherenceMap =
+        Map<APIMGovPolicyAttachmentAdherenceSate, List<String>> adherenceMap =
                 complianceManager.getAdherenceStateOfEvaluatedPolicyAttachments(organization);
 
-        int followedCount = adherenceMap.get(PolicyAttachmentAdherenceSate.FOLLOWED).size();
-        int violatedCount = adherenceMap.get(PolicyAttachmentAdherenceSate.VIOLATED).size();
+        int followedCount = adherenceMap.get(APIMGovPolicyAttachmentAdherenceSate.FOLLOWED).size();
+        int violatedCount = adherenceMap.get(APIMGovPolicyAttachmentAdherenceSate.VIOLATED).size();
 
         PolicyAttachmentAdherenceSummaryDTO summaryDTO =
                 new PolicyAttachmentAdherenceSummaryDTO();
@@ -82,7 +82,7 @@ public class PolicyAttachmentAdherenceApiServiceImpl implements PolicyAttachment
             throws APIMGovernanceException {
 
         String organization = APIMGovernanceAPIUtil.getValidatedOrganization(messageContext);
-        APIMGovernancePolicyAttachment policyAttachment = new PolicyAttachmentManager()
+        APIMGovPolicyAttachment policyAttachment = new PolicyAttachmentManager()
                 .getGovernancePolicyAttachmentByID(policyAttachmentId, organization);
 
         Map<ArtifactComplianceState, List<ArtifactInfo>> evaluatedArtifacts =
@@ -155,7 +155,7 @@ public class PolicyAttachmentAdherenceApiServiceImpl implements PolicyAttachment
         String organization = APIMGovernanceAPIUtil.getValidatedOrganization(messageContext);
 
         // Get the list of policy attachments
-        List<APIMGovernancePolicyAttachment> allPolicies = new PolicyAttachmentManager()
+        List<APIMGovPolicyAttachment> allPolicies = new PolicyAttachmentManager()
                 .getGovernancePolicyAttachments(organization)
                 .getGovernancePolicyAttachmentList();
 
@@ -164,12 +164,12 @@ public class PolicyAttachmentAdherenceApiServiceImpl implements PolicyAttachment
             offset = RestApiConstants.PAGINATION_OFFSET_DEFAULT;
         }
 
-        List<APIMGovernancePolicyAttachment> attachments = allPolicies.subList(offset, Math.min(offset + limit,
+        List<APIMGovPolicyAttachment> attachments = allPolicies.subList(offset, Math.min(offset + limit,
                 allPolicies.size()));
 
         List<PolicyAttachmentAdherenceStatusDTO> policyAttachmentAdherenceStatusDTOs = new ArrayList<>();
 
-        for (APIMGovernancePolicyAttachment attachment : attachments) {
+        for (APIMGovPolicyAttachment attachment : attachments) {
             Map<ArtifactComplianceState, List<ArtifactInfo>> evaluatedArtifactsByPolicy =
                     new ComplianceManager().getArtifactsComplianceForPolicy(attachment.getId(), organization,
                             false);
@@ -202,7 +202,7 @@ public class PolicyAttachmentAdherenceApiServiceImpl implements PolicyAttachment
      * @return PolicyAdherenceStatusDTO object
      */
     private PolicyAttachmentAdherenceStatusDTO getPolicyAttachmentAdherenceStatusDTO(
-            APIMGovernancePolicyAttachment policyAttachment,
+            APIMGovPolicyAttachment policyAttachment,
             int compliantArtifactCount,
             int nonCompliantArtifactCount) {
 

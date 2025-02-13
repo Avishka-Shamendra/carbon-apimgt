@@ -23,12 +23,12 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
 import org.wso2.carbon.apimgt.governance.api.model.ExtendedArtifactType;
-import org.wso2.carbon.apimgt.governance.api.model.Policy;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyCategory;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyContent;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyInfo;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyList;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyType;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicy;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyCategory;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyContent;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyList;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyType;
 import org.wso2.carbon.apimgt.governance.api.model.Rule;
 import org.wso2.carbon.apimgt.governance.api.model.RuleSeverity;
 import org.wso2.carbon.apimgt.governance.impl.APIMGovernanceConstants;
@@ -82,8 +82,8 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @throws APIMGovernanceException If an error occurs while creating the policy
      */
     @Override
-    public PolicyInfo createPolicy(Policy policy, List<Rule> rules,
-                                   String organization) throws APIMGovernanceException {
+    public APIMGovPolicyInfo createPolicy(APIMGovPolicy policy, List<Rule> rules,
+                                          String organization) throws APIMGovernanceException {
 
         String sqlQuery = SQLConstants.CREATE_POLICY;
         try (Connection connection = APIMGovernanceDBUtil.getConnection()) {
@@ -129,8 +129,8 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @throws APIMGovernanceException If an error occurs while updating the policy
      */
     @Override
-    public PolicyInfo updatePolicy(String policyId, Policy policy, List<Rule> rules,
-                                   String organization)
+    public APIMGovPolicyInfo updatePolicy(String policyId, APIMGovPolicy policy, List<Rule> rules,
+                                          String organization)
             throws APIMGovernanceException {
 
         try (Connection connection = APIMGovernanceDBUtil.getConnection()) {
@@ -206,7 +206,7 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @throws SQLException If an error occurs while adding the policy content
      * @throws IOException  If an error occurs while adding the policy content
      */
-    private void addPolicyContent(Connection connection, String policyId, PolicyContent policyContent)
+    private void addPolicyContent(Connection connection, String policyId, APIMGovPolicyContent policyContent)
             throws SQLException, IOException {
         String sqlQuery = SQLConstants.ADD_POLICY_CONTENT;
         try (PreparedStatement prepStmt = connection.prepareStatement(sqlQuery);
@@ -228,7 +228,7 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @throws SQLException If an error occurs while updating the policy content
      * @throws IOException  If an error occurs while updating the policy content
      */
-    private void updatePolicyContent(Connection connection, String policyId, PolicyContent policyContent)
+    private void updatePolicyContent(Connection connection, String policyId, APIMGovPolicyContent policyContent)
             throws SQLException, IOException {
         String sqlQuery = SQLConstants.UPDATE_POLICY_CONTENT;
         try (PreparedStatement prepStmt = connection.prepareStatement(sqlQuery);
@@ -345,9 +345,9 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @throws APIMGovernanceException if there is an error retrieving the policies
      */
     @Override
-    public PolicyList getPolicies(String organization) throws APIMGovernanceException {
-        PolicyList policyList = new PolicyList();
-        List<PolicyInfo> policyInfoList = new ArrayList<>();
+    public APIMGovPolicyList getPolicies(String organization) throws APIMGovernanceException {
+        APIMGovPolicyList policyList = new APIMGovPolicyList();
+        List<APIMGovPolicyInfo> policyInfoList = new ArrayList<>();
         String sqlQuery = SQLConstants.GET_POLICIES;
         try (Connection connection = APIMGovernanceDBUtil.getConnection();
              PreparedStatement prepStmt = connection.prepareStatement(sqlQuery)) {
@@ -375,7 +375,7 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @throws APIMGovernanceException if there is an error retrieving the policy
      */
     @Override
-    public PolicyInfo getPolicyByName(String name, String organization) throws APIMGovernanceException {
+    public APIMGovPolicyInfo getPolicyByName(String name, String organization) throws APIMGovernanceException {
         String sqlQuery = SQLConstants.GET_POLICY_BY_NAME;
         try (Connection connection = APIMGovernanceDBUtil.getConnection();
              PreparedStatement prepStmt = connection.prepareStatement(sqlQuery)) {
@@ -402,7 +402,7 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @throws APIMGovernanceException if there is an error retrieving the policy
      */
     @Override
-    public PolicyInfo getPolicyById(String policyId, String organization) throws APIMGovernanceException {
+    public APIMGovPolicyInfo getPolicyById(String policyId, String organization) throws APIMGovernanceException {
         String sqlQuery = SQLConstants.GET_POLICIES_BY_ID;
         try (Connection connection = APIMGovernanceDBUtil.getConnection();
              PreparedStatement prepStmt = connection.prepareStatement(sqlQuery)) {
@@ -429,10 +429,10 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @throws APIMGovernanceException If an error occurs while searching for policies
      */
     @Override
-    public PolicyList searchPolicies(Map<String, String> searchCriteria, String organization)
+    public APIMGovPolicyList searchPolicies(Map<String, String> searchCriteria, String organization)
             throws APIMGovernanceException {
-        PolicyList policyList = new PolicyList();
-        List<PolicyInfo> policyInfoList = new ArrayList<>();
+        APIMGovPolicyList policyList = new APIMGovPolicyList();
+        List<APIMGovPolicyInfo> policyInfoList = new ArrayList<>();
 
         String sqlQuery = SQLConstants.SEARCH_POLICIES;
         try (Connection connection = APIMGovernanceDBUtil.getConnection();
@@ -465,14 +465,14 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @return PolicyInfo object
      * @throws SQLException If an error occurs while retrieving the policy
      */
-    private PolicyInfo getPolicyInfoFromResultSet(ResultSet rs) throws SQLException {
-        PolicyInfo policyInfo = new PolicyInfo();
+    private APIMGovPolicyInfo getPolicyInfoFromResultSet(ResultSet rs) throws SQLException {
+        APIMGovPolicyInfo policyInfo = new APIMGovPolicyInfo();
         policyInfo.setId(rs.getString("POLICY_ID"));
         policyInfo.setName(rs.getString("NAME"));
         policyInfo.setDescription(rs.getString("DESCRIPTION"));
-        policyInfo.setPolicyCategory(PolicyCategory.fromString(
+        policyInfo.setPolicyCategory(APIMGovPolicyCategory.fromString(
                 rs.getString("POLICY_CATEGORY")));
-        policyInfo.setPolicyType(PolicyType.fromString(rs.getString("POLICY_TYPE")));
+        policyInfo.setPolicyType(APIMGovPolicyType.fromString(rs.getString("POLICY_TYPE")));
         policyInfo.setArtifactType(ExtendedArtifactType.fromString(
                 rs.getString("ARTIFACT_TYPE")));
         policyInfo.setDocumentationLink(rs.getString("DOCUMENTATION_LINK"));
@@ -493,7 +493,7 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
      * @throws APIMGovernanceException If an error occurs while getting the policy content
      */
     @Override
-    public PolicyContent getPolicyContent(String policyId, String organization) throws APIMGovernanceException {
+    public APIMGovPolicyContent getPolicyContent(String policyId, String organization) throws APIMGovernanceException {
         String sqlQuery = SQLConstants.GET_POLICY_CONTENT;
         try (Connection connection = APIMGovernanceDBUtil.getConnection();
              PreparedStatement prepStmt = connection.prepareStatement(sqlQuery);) {
@@ -501,7 +501,7 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
             prepStmt.setString(2, organization);
             try (ResultSet rs = prepStmt.executeQuery()) {
                 if (rs.next()) {
-                    PolicyContent policyContentObj = new PolicyContent();
+                    APIMGovPolicyContent policyContentObj = new APIMGovPolicyContent();
                     policyContentObj.setFileName(rs.getString("FILE_NAME"));
                     policyContentObj.setContent(rs.getBytes("CONTENT"));
                     return policyContentObj;

@@ -27,14 +27,14 @@ import org.wso2.carbon.apimgt.governance.api.error.APIMGovExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
 import org.wso2.carbon.apimgt.governance.api.model.APIMGovernableState;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactType;
-import org.wso2.carbon.apimgt.governance.api.model.DefaultPolicy;
+import org.wso2.carbon.apimgt.governance.api.model.DefaultGovPolicy;
 import org.wso2.carbon.apimgt.governance.api.model.ExtendedArtifactType;
-import org.wso2.carbon.apimgt.governance.api.model.Policy;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyCategory;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyContent;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyInfo;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyList;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyType;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicy;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyCategory;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyContent;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyList;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyType;
 import org.wso2.carbon.apimgt.governance.impl.APIMGovernanceConstants;
 import org.wso2.carbon.apimgt.governance.impl.PolicyAttachmentManager;
 import org.wso2.carbon.apimgt.governance.impl.PolicyManager;
@@ -136,10 +136,10 @@ public class APIMGovernanceUtil {
         PolicyManager policyManager = new PolicyManager();
         try {
             // Fetch existing policies for the organization
-            PolicyList existingPolicies = policyManager.getPolicies(organization);
-            List<PolicyInfo> policyInfos = existingPolicies.getPolicyList();
+            APIMGovPolicyList existingPolicies = policyManager.getPolicies(organization);
+            List<APIMGovPolicyInfo> policyInfos = existingPolicies.getPolicyList();
             List<String> existingPolicyNames = policyInfos.stream()
-                    .map(PolicyInfo::getName)
+                    .map(APIMGovPolicyInfo::getName)
                     .collect(Collectors.toList());
 
             // Define the path to default policies
@@ -153,7 +153,7 @@ public class APIMGovernanceUtil {
                 if (file.isFile() && (file.getName().endsWith(".yaml") || file.getName().endsWith(".yml"))) {
                     try {
                         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-                        DefaultPolicy defaultPolicy = mapper.readValue(file, DefaultPolicy.class);
+                        DefaultGovPolicy defaultPolicy = mapper.readValue(file, DefaultGovPolicy.class);
 
                         // Add policy if it doesn't already exist
                         if (!existingPolicyNames.contains(defaultPolicy.getName())) {
@@ -186,18 +186,18 @@ public class APIMGovernanceUtil {
      * @return Governance Policy
      * @throws APIMGovernanceException if an error occurs while loading default policy content
      */
-    public static Policy getPolicyFromDefaultPolicy(DefaultPolicy defaultPolicy,
-                                                    String fileName) throws APIMGovernanceException {
-        Policy policy = new Policy();
+    public static APIMGovPolicy getPolicyFromDefaultPolicy(DefaultGovPolicy defaultPolicy,
+                                                           String fileName) throws APIMGovernanceException {
+        APIMGovPolicy policy = new APIMGovPolicy();
         policy.setName(defaultPolicy.getName());
         policy.setDescription(defaultPolicy.getDescription());
-        policy.setPolicyCategory(PolicyCategory.fromString(defaultPolicy.getPolicyCategory()));
-        policy.setPolicyType(PolicyType.fromString(defaultPolicy.getPolicyType()));
+        policy.setPolicyCategory(APIMGovPolicyCategory.fromString(defaultPolicy.getPolicyCategory()));
+        policy.setPolicyType(APIMGovPolicyType.fromString(defaultPolicy.getPolicyType()));
         policy.setArtifactType(ExtendedArtifactType.fromString(defaultPolicy.getArtifactType()));
         policy.setProvider(defaultPolicy.getProvider());
         policy.setDocumentationLink(defaultPolicy.getDocumentationLink());
 
-        PolicyContent policyContent = new PolicyContent();
+        APIMGovPolicyContent policyContent = new APIMGovPolicyContent();
         policyContent.setFileName(fileName);
         policyContent.setContent(defaultPolicy.getPolicyContentString().getBytes(StandardCharsets.UTF_8));
         policy.setPolicyContent(policyContent);
@@ -483,7 +483,7 @@ public class APIMGovernanceUtil {
      * @param artifactType Artifact Type
      * @return Map of RuleType and String
      */
-    public static Map<PolicyType, String> extractArtifactProjectContent(byte[] project, ArtifactType artifactType)
+    public static Map<APIMGovPolicyType, String> extractArtifactProjectContent(byte[] project, ArtifactType artifactType)
             throws APIMGovernanceException {
         if (ArtifactType.API.equals(artifactType)) {
             return APIMUtil.extractAPIProjectContent(project);

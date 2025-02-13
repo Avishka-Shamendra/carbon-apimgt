@@ -25,9 +25,9 @@ import java.util.List;
 /**
  * This class represents a list of governance Policies
  */
-public class APIMGovernancePolicyAttachmentList {
+public class APIMGovPolicyAttachmentList {
     private Integer count;
-    private List<APIMGovernancePolicyAttachment> governancePolicyAttachmentList = new ArrayList<>();
+    private List<APIMGovPolicyAttachment> governancePolicyAttachmentList = new ArrayList<>();
 
     public Integer getCount() {
         return count;
@@ -37,12 +37,12 @@ public class APIMGovernancePolicyAttachmentList {
         this.count = count;
     }
 
-    public List<APIMGovernancePolicyAttachment> getGovernancePolicyAttachmentList() {
+    public List<APIMGovPolicyAttachment> getGovernancePolicyAttachmentList() {
 
         return new ArrayList<>(governancePolicyAttachmentList);
     }
 
-    public void setGovernancePolicyAttachmentList(List<APIMGovernancePolicyAttachment> governancePolicyAttachmentList) {
+    public void setGovernancePolicyAttachmentList(List<APIMGovPolicyAttachment> governancePolicyAttachmentList) {
 
         this.governancePolicyAttachmentList = Collections
                 .unmodifiableList(new ArrayList<>(governancePolicyAttachmentList));

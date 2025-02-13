@@ -23,8 +23,8 @@ import org.apache.cxf.jaxrs.ext.MessageContext;
 import org.wso2.carbon.apimgt.governance.api.APIMGovernanceAPIConstants;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
-import org.wso2.carbon.apimgt.governance.api.model.APIMGovernancePolicyAttachment;
-import org.wso2.carbon.apimgt.governance.api.model.APIMGovernancePolicyAttachmentList;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyAttachment;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyAttachmentList;
 import org.wso2.carbon.apimgt.governance.impl.ComplianceManager;
 import org.wso2.carbon.apimgt.governance.impl.PolicyAttachmentManager;
 import org.wso2.carbon.apimgt.governance.rest.api.PolicyAttachmentsApiService;
@@ -64,7 +64,7 @@ public class PolicyAttachmentsApiServiceImpl implements PolicyAttachmentsApiServ
 
         try {
             PolicyAttachmentManager policyAttachmentManager = new PolicyAttachmentManager();
-            APIMGovernancePolicyAttachment governancePolicyAttachment =
+            APIMGovPolicyAttachment governancePolicyAttachment =
                     PolicyAttachmentMappingUtil.fromDTOtoGovernancePolicyAttachment(policyAttachmentDTO);
 
             String username = APIMGovernanceAPIUtil.getLoggedInUsername();
@@ -105,12 +105,12 @@ public class PolicyAttachmentsApiServiceImpl implements PolicyAttachmentsApiServ
         String organization = APIMGovernanceAPIUtil.getValidatedOrganization(messageContext);
         String username = APIMGovernanceAPIUtil.getLoggedInUsername();
 
-        APIMGovernancePolicyAttachment governancePolicyAttachment =
+        APIMGovPolicyAttachment governancePolicyAttachment =
                 PolicyAttachmentMappingUtil.
                         fromDTOtoGovernancePolicyAttachment(policyAttachmentDTO);
 
         governancePolicyAttachment.setUpdatedBy(username);
-        APIMGovernancePolicyAttachment updatedPolicy = policyAttachmentManager.updateGovernancePolicyAttachment
+        APIMGovPolicyAttachment updatedPolicy = policyAttachmentManager.updateGovernancePolicyAttachment
                 (policyAttachmentId, governancePolicyAttachment, organization);
 
         APIMGovernancePolicyAttachmentDTO updatedPolicyDTO = PolicyAttachmentMappingUtil.
@@ -152,7 +152,7 @@ public class PolicyAttachmentsApiServiceImpl implements PolicyAttachmentsApiServ
         PolicyAttachmentManager policyAttachmentManager = new PolicyAttachmentManager();
         String organization = APIMGovernanceAPIUtil.getValidatedOrganization(messageContext);
 
-        APIMGovernancePolicyAttachment policyAttachment = policyAttachmentManager
+        APIMGovPolicyAttachment policyAttachment = policyAttachmentManager
                 .getGovernancePolicyAttachmentByID(policyAttachmentId, organization);
         APIMGovernancePolicyAttachmentDTO policyAttachmentDTO
                 = PolicyAttachmentMappingUtil
@@ -180,7 +180,7 @@ public class PolicyAttachmentsApiServiceImpl implements PolicyAttachmentsApiServ
         PolicyAttachmentManager policyAttachmentManager = new PolicyAttachmentManager();
         String organization = APIMGovernanceAPIUtil.getValidatedOrganization(messageContext);
 
-        APIMGovernancePolicyAttachmentList attachmentList;
+        APIMGovPolicyAttachmentList attachmentList;
         if (!query.isEmpty()) {
             attachmentList = policyAttachmentManager.searchGovernancePolicyAttachments(query, organization);
         } else {
@@ -197,13 +197,13 @@ public class PolicyAttachmentsApiServiceImpl implements PolicyAttachmentsApiServ
      * Get a paginated list of Governance Policy Attachments
      *
      * @param attachmentList List of Governance Policy Attachments
-     * @param limit      Limit for Pagination
-     * @param offset     Offset for Pagination
-     * @param query      Query for filtering
+     * @param limit          Limit for Pagination
+     * @param offset         Offset for Pagination
+     * @param query          Query for filtering
      * @return Paginated Governance Policy Attachment List
      */
     private APIMGovernancePolicyAttachmentListDTO getPaginatedPolicyAttachmentList(
-            APIMGovernancePolicyAttachmentList attachmentList, int limit, int offset, String query) {
+            APIMGovPolicyAttachmentList attachmentList, int limit, int offset, String query) {
 
         int attachmentCount = attachmentList.getCount();
         List<APIMGovernancePolicyAttachmentDTO> policies = new ArrayList<>();
@@ -219,7 +219,7 @@ public class PolicyAttachmentsApiServiceImpl implements PolicyAttachmentsApiServ
         int start = offset;
         int end = Math.min(attachmentCount, start + limit);
         for (int i = start; i < end; i++) {
-            APIMGovernancePolicyAttachment attachment = attachmentList.getGovernancePolicyAttachmentList().get(i);
+            APIMGovPolicyAttachment attachment = attachmentList.getGovernancePolicyAttachmentList().get(i);
             APIMGovernancePolicyAttachmentDTO policyAttachmentDTO = PolicyAttachmentMappingUtil
                     .fromGovernancePolicyAttachmentToGovernancePolicyAttachmentDTO(attachment);
             policies.add(policyAttachmentDTO);

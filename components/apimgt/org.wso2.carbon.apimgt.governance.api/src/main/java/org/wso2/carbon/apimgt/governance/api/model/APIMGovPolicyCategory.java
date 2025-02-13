@@ -18,33 +18,19 @@
 
 package org.wso2.carbon.apimgt.governance.api.model;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 /**
- * This class represents a list of governance policies
+ * This class represents a governance rule category
  */
-public class PolicyList {
-    private Integer count;
+public enum APIMGovPolicyCategory {
+    SPECTRAL,
+    AI;
 
-    private List<PolicyInfo> policyList = new ArrayList<>();
-
-    public Integer getCount() {
-        return count;
-    }
-
-    public void setCount(Integer count) {
-        this.count = count;
-    }
-
-    public List<PolicyInfo> getPolicyList() {
-
-        return new ArrayList<>(policyList);
-    }
-
-    public void setPolicyList(List<PolicyInfo> policyList) {
-
-        this.policyList = Collections.unmodifiableList(new ArrayList<>(policyList));
+    public static APIMGovPolicyCategory fromString(String text) {
+        if ("spectral".equalsIgnoreCase(text)) {
+            return APIMGovPolicyCategory.SPECTRAL;
+        } else if ("ai".equalsIgnoreCase(text)) {
+            return APIMGovPolicyCategory.AI;
+        }
+        return APIMGovPolicyCategory.SPECTRAL;
     }
 }

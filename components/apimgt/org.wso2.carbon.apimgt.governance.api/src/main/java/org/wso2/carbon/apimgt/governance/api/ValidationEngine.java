@@ -19,7 +19,7 @@
 package org.wso2.carbon.apimgt.governance.api;
 
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
-import org.wso2.carbon.apimgt.governance.api.model.Policy;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicy;
 import org.wso2.carbon.apimgt.governance.api.model.Rule;
 import org.wso2.carbon.apimgt.governance.api.model.RuleViolation;
 
@@ -38,7 +38,7 @@ public interface ValidationEngine {
      * @param policy Governance Policy
      * @throws APIMGovernanceException If an error occurs while validating the governance policy
      */
-    void validatePolicyContent(Policy policy) throws APIMGovernanceException;
+    void validatePolicyContent(APIMGovPolicy policy) throws APIMGovernanceException;
 
     /**
      * Extract rules from a governance policy
@@ -47,7 +47,7 @@ public interface ValidationEngine {
      * @return List of rules
      * @throws APIMGovernanceException If an error occurs while extracting rules
      */
-    List<Rule> extractRulesFromPolicy(Policy policy) throws APIMGovernanceException;
+    List<Rule> extractRulesFromPolicy(APIMGovPolicy policy) throws APIMGovernanceException;
 
     /**
      * Validate a target against a governance policy
@@ -57,5 +57,5 @@ public interface ValidationEngine {
      * @return List of rule violations
      * @throws APIMGovernanceException If an error occurs while validating the target
      */
-    List<RuleViolation> validate(String target, Policy policy) throws APIMGovernanceException;
+    List<RuleViolation> validate(String target, APIMGovPolicy policy) throws APIMGovernanceException;
 }

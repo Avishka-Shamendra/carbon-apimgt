@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.apimgt.governance.rest.api.mappings;
 
-import org.wso2.carbon.apimgt.governance.api.model.PolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyInfo;
 import org.wso2.carbon.apimgt.governance.rest.api.dto.PolicyInfoDTO;
 
 /**
@@ -32,7 +32,7 @@ public class PolicyMappingUtil {
      * @param policyInfo PolicyInfo object
      * @return PolicyInfoDTO object
      */
-    public static PolicyInfoDTO fromPolicyInfoToPolicyInfoDTO(PolicyInfo policyInfo) {
+    public static PolicyInfoDTO fromPolicyInfoToPolicyInfoDTO(APIMGovPolicyInfo policyInfo) {
         PolicyInfoDTO policyInfoDTO = new PolicyInfoDTO();
         policyInfoDTO.setId(policyInfo.getId());
         policyInfoDTO.setName(policyInfo.getName());

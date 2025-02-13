@@ -24,12 +24,12 @@ import org.osgi.service.component.annotations.Component;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
 import org.wso2.carbon.apimgt.governance.api.model.APIMGovernableState;
-import org.wso2.carbon.apimgt.governance.api.model.APIMGovernancePolicyAttachment;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyAttachment;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactComplianceDryRunInfo;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactComplianceInfo;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactType;
 import org.wso2.carbon.apimgt.governance.api.model.ExtendedArtifactType;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyType;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyType;
 import org.wso2.carbon.apimgt.governance.api.service.APIMGovernanceService;
 import org.wso2.carbon.apimgt.governance.impl.ComplianceManager;
 import org.wso2.carbon.apimgt.governance.impl.PolicyAttachmentManager;
@@ -131,7 +131,7 @@ public class APIMGovernanceServiceImpl implements APIMGovernanceService {
     @Override
     public ArtifactComplianceInfo evaluateComplianceSync(String artifactRefId, String revisionNo,
                                                          ArtifactType artifactType, APIMGovernableState state,
-                                                         Map<PolicyType, String> artifactProjectContent,
+                                                         Map<APIMGovPolicyType, String> artifactProjectContent,
                                                          String organization) throws APIMGovernanceException {
 
         List<String> applicablePolicyAttachmentIds = APIMGovernanceUtil
@@ -174,7 +174,7 @@ public class APIMGovernanceServiceImpl implements APIMGovernanceService {
 
         // Only extract content if the artifact type requires it.
         if (ExtendedArtifactType.isArtifactAPI(artifactType)) {
-            Map<PolicyType, String> contentMap = APIMGovernanceUtil
+            Map<APIMGovPolicyType, String> contentMap = APIMGovernanceUtil
                     .extractArtifactProjectContent(zipArchive, ArtifactType.API);
             return complianceManager.handleComplianceEvalDryRun(artifactType, applicablePolicyAttachmentIds,
                     contentMap, organization);
@@ -214,7 +214,7 @@ public class APIMGovernanceServiceImpl implements APIMGovernanceService {
             boolean isDeployed = APIMUtil.isAPIDeployed(artifactRefId);
 
             for (String attachmentId : allPolicyAttachmentsForLabel) {
-                APIMGovernancePolicyAttachment policyAttachment = policyAttachmentManager
+                APIMGovPolicyAttachment policyAttachment = policyAttachmentManager
                         .getGovernancePolicyAttachmentByID(attachmentId, organization);
                 boolean isAPIGovernable = APIMUtil.isAPIGovernable(apiStatus, isDeployed,
                         policyAttachment.getGovernableStates());

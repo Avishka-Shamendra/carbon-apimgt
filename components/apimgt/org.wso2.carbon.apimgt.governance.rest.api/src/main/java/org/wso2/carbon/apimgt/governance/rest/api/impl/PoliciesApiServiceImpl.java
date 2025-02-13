@@ -26,12 +26,12 @@ import org.wso2.carbon.apimgt.governance.api.APIMGovernanceAPIConstants;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
 import org.wso2.carbon.apimgt.governance.api.model.ExtendedArtifactType;
-import org.wso2.carbon.apimgt.governance.api.model.Policy;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyCategory;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyContent;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyInfo;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyList;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyType;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicy;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyCategory;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyContent;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyList;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyType;
 import org.wso2.carbon.apimgt.governance.impl.ComplianceManager;
 import org.wso2.carbon.apimgt.governance.impl.PolicyManager;
 import org.wso2.carbon.apimgt.governance.rest.api.PoliciesApiService;
@@ -82,17 +82,17 @@ public class PoliciesApiServiceImpl implements PoliciesApiService {
                                  MessageContext messageContext) throws APIMGovernanceException {
         PolicyInfoDTO createdPolicyDTO;
         URI createdPolicyURI;
-        Policy policy = new Policy();
+        APIMGovPolicy policy = new APIMGovPolicy();
         try {
             policy.setName(name);
-            policy.setPolicyCategory(PolicyCategory.fromString(policyCategory));
-            policy.setPolicyType(PolicyType.fromString(policyType));
+            policy.setPolicyCategory(APIMGovPolicyCategory.fromString(policyCategory));
+            policy.setPolicyType(APIMGovPolicyType.fromString(policyType));
             policy.setArtifactType(ExtendedArtifactType.fromString(artifactType));
             policy.setProvider(provider);
             policy.setDescription(description);
             policy.setDocumentationLink(documentationLink);
 
-            PolicyContent policyContent = new PolicyContent();
+            APIMGovPolicyContent policyContent = new APIMGovPolicyContent();
             policyContent.setContent(IOUtils.toByteArray(policyContentInputStream));
             policyContent.setFileName(policyContentDetail.getContentDisposition().getFilename());
             policy.setPolicyContent(policyContent);
@@ -102,7 +102,7 @@ public class PoliciesApiServiceImpl implements PoliciesApiService {
             policy.setCreatedBy(username);
 
             PolicyManager policyManager = new PolicyManager();
-            PolicyInfo createdPolicy = policyManager.createNewPolicy(policy, organization);
+            APIMGovPolicyInfo createdPolicy = policyManager.createNewPolicy(policy, organization);
 
             createdPolicyDTO = PolicyMappingUtil.fromPolicyInfoToPolicyInfoDTO(createdPolicy);
             createdPolicyURI = new URI(
@@ -146,17 +146,17 @@ public class PoliciesApiServiceImpl implements PoliciesApiService {
             throws APIMGovernanceException {
 
         try {
-            Policy policy = new Policy();
+            APIMGovPolicy policy = new APIMGovPolicy();
             policy.setName(name);
-            policy.setPolicyCategory(PolicyCategory.fromString(policyCategory));
-            policy.setPolicyType(PolicyType.fromString(policyType));
+            policy.setPolicyCategory(APIMGovPolicyCategory.fromString(policyCategory));
+            policy.setPolicyType(APIMGovPolicyType.fromString(policyType));
             policy.setArtifactType(ExtendedArtifactType.fromString(artifactType));
             policy.setProvider(provider);
             policy.setId(policyId);
             policy.setDescription(description);
             policy.setDocumentationLink(documentationLink);
 
-            PolicyContent policyContent = new PolicyContent();
+            APIMGovPolicyContent policyContent = new APIMGovPolicyContent();
             policyContent.setContent(IOUtils.toByteArray(policyContentInputStream));
             policyContent.setFileName(policyContentDetail.getContentDisposition().getFilename());
             policy.setPolicyContent(policyContent);
@@ -166,7 +166,7 @@ public class PoliciesApiServiceImpl implements PoliciesApiService {
             policy.setUpdatedBy(username);
 
             PolicyManager policyManager = new PolicyManager();
-            PolicyInfo updatedPolicy = policyManager.updatePolicy(policyId, policy, organization);
+            APIMGovPolicyInfo updatedPolicy = policyManager.updatePolicy(policyId, policy, organization);
 
             // Re-access policy compliance in the background
             new ComplianceManager().handlePolicyChangeEvent(policyId, organization);
@@ -212,7 +212,7 @@ public class PoliciesApiServiceImpl implements PoliciesApiService {
 
         String organization = APIMGovernanceAPIUtil.getValidatedOrganization(messageContext);
 
-        PolicyInfo policy = policyManager.getPolicyById(policyId, organization);
+        APIMGovPolicyInfo policy = policyManager.getPolicyById(policyId, organization);
         PolicyInfoDTO policyInfoDTO = PolicyMappingUtil.fromPolicyInfoToPolicyInfoDTO(policy);
         return Response.status(Response.Status.OK).entity(policyInfoDTO).build();
     }
@@ -230,12 +230,12 @@ public class PoliciesApiServiceImpl implements PoliciesApiService {
         PolicyManager policyManager = new PolicyManager();
         String organization = APIMGovernanceAPIUtil.getValidatedOrganization(messageContext);
 
-        PolicyContent policyContent = policyManager.getPolicyContent(policyId, organization);
+        APIMGovPolicyContent policyContent = policyManager.getPolicyContent(policyId, organization);
 
         String fileName = policyContent.getFileName() != null ? policyContent.getFileName() : "policy.yaml";
         String contentTypeHeader = "application/x-yaml"; // Default content type
 
-        if (PolicyContent.ContentType.JSON.equals(policyContent.getContentType())) {
+        if (APIMGovPolicyContent.ContentType.JSON.equals(policyContent.getContentType())) {
             contentTypeHeader = "application/json";
         }
         
@@ -282,7 +282,7 @@ public class PoliciesApiServiceImpl implements PoliciesApiService {
         PolicyManager policyManager = new PolicyManager();
         String organization = APIMGovernanceAPIUtil.getValidatedOrganization(messageContext);
 
-        PolicyList policyList;
+        APIMGovPolicyList policyList;
         if (!query.isEmpty()) {
             policyList = policyManager.searchPolicies(query, organization);
         } else {
@@ -302,7 +302,7 @@ public class PoliciesApiServiceImpl implements PoliciesApiService {
      * @param query      Query for filtering
      * @return PolicyListDTO object
      */
-    private PolicyListDTO getPaginatedPolicies(PolicyList policyList, int limit, int offset, String query) {
+    private PolicyListDTO getPaginatedPolicies(APIMGovPolicyList policyList, int limit, int offset, String query) {
         int policyCount = policyList.getCount();
         List<PolicyInfoDTO> paginatedPolicies = new ArrayList<>();
         PolicyListDTO paginatedPolicyListDTO = new PolicyListDTO();
@@ -317,7 +317,7 @@ public class PoliciesApiServiceImpl implements PoliciesApiService {
         int start = offset;
         int end = Math.min(policyCount, start + limit);
         for (int i = start; i < end; i++) {
-            PolicyInfo policyInfo = policyList.getPolicyList().get(i);
+            APIMGovPolicyInfo policyInfo = policyList.getPolicyList().get(i);
             PolicyInfoDTO policyInfoDTO = PolicyMappingUtil.fromPolicyInfoToPolicyInfoDTO(policyInfo);
             paginatedPolicies.add(policyInfoDTO);
         }

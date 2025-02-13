@@ -27,7 +27,7 @@ import static org.wso2.carbon.apimgt.governance.api.APIMGovernanceAPIConstants.Y
 /**
  * This class represents the Policy Content
  */
-public class PolicyContent {
+public class APIMGovPolicyContent {
     byte[] content;
     ContentType contentType;
     String fileName;
@@ -40,10 +40,10 @@ public class PolicyContent {
         JSON
     }
 
-    public PolicyContent() {
+    public APIMGovPolicyContent() {
     }
 
-    public PolicyContent(PolicyContent other) {
+    public APIMGovPolicyContent(APIMGovPolicyContent other) {
         if (other != null) {
             this.content = other.content != null ? other.content.clone() : null;
             this.contentType = other.contentType;

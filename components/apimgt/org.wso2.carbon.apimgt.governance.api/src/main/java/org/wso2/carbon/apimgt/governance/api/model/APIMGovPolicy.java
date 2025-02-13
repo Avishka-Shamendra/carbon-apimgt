@@ -19,21 +19,17 @@
 package org.wso2.carbon.apimgt.governance.api.model;
 
 /**
- * This class represents a governance policy type
+ * This class represents a governance policy
  */
-public enum PolicyType {
-    API_METADATA,
-    API_DEFINITION,
-    API_DOCUMENTATION;
+public class APIMGovPolicy extends APIMGovPolicyInfo {
+    private APIMGovPolicyContent policyContent;
 
-    public static PolicyType fromString(String ruleTypeString) {
-        if ("api_metadata".equalsIgnoreCase(ruleTypeString)) {
-            return PolicyType.API_METADATA;
-        } else if ("api_definition".equalsIgnoreCase(ruleTypeString)) {
-            return PolicyType.API_DEFINITION;
-        } else if ("api_documentation".equalsIgnoreCase(ruleTypeString)) {
-            return PolicyType.API_DOCUMENTATION;
-        }
-        return null;
+    public APIMGovPolicyContent getPolicyContent() {
+        return new APIMGovPolicyContent(policyContent);
+    }
+
+    public void setPolicyContent(APIMGovPolicyContent policyContent) {
+        this.policyContent = new APIMGovPolicyContent(policyContent);
     }
 }
+

@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * This class represents a governance Policy Attachment
  */
-public class APIMGovernancePolicyAttachment {
+public class APIMGovPolicyAttachment {
     private String id;
     private String name;
     private String description;

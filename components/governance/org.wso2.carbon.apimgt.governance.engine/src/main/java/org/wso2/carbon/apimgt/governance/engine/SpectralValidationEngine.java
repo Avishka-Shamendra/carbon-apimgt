@@ -28,8 +28,8 @@ import org.osgi.service.component.annotations.Component;
 import org.wso2.carbon.apimgt.governance.api.ValidationEngine;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
-import org.wso2.carbon.apimgt.governance.api.model.Policy;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyContent;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicy;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyContent;
 import org.wso2.carbon.apimgt.governance.api.model.Rule;
 import org.wso2.carbon.apimgt.governance.api.model.RuleSeverity;
 import org.wso2.carbon.apimgt.governance.api.model.RuleViolation;
@@ -62,8 +62,8 @@ public class SpectralValidationEngine implements ValidationEngine {
      * @throws APIMGovernanceException If an error occurs while validating the policy
      */
     @Override
-    public void validatePolicyContent(Policy policy) throws APIMGovernanceException {
-        PolicyContent content = policy.getPolicyContent();
+    public void validatePolicyContent(APIMGovPolicy policy) throws APIMGovernanceException {
+        APIMGovPolicyContent content = policy.getPolicyContent();
         String contentString = new String(content.getContent(),
                 StandardCharsets.UTF_8);
         String jsonString;
@@ -94,7 +94,7 @@ public class SpectralValidationEngine implements ValidationEngine {
      * @throws APIMGovernanceException If an error occurs while extracting rules
      */
     @Override
-    public List<Rule> extractRulesFromPolicy(Policy policy) throws APIMGovernanceException {
+    public List<Rule> extractRulesFromPolicy(APIMGovPolicy policy) throws APIMGovernanceException {
         String ruleContentString = new String(policy.getPolicyContent().getContent(),
                 StandardCharsets.UTF_8);
 
@@ -148,10 +148,10 @@ public class SpectralValidationEngine implements ValidationEngine {
      * @throws APIMGovernanceException If an error occurs while validating the target
      */
     @Override
-    public List<RuleViolation> validate(String target, Policy policy) throws APIMGovernanceException {
+    public List<RuleViolation> validate(String target, APIMGovPolicy policy) throws APIMGovernanceException {
 
         try {
-            PolicyContent policyContent = policy.getPolicyContent();
+            APIMGovPolicyContent policyContent = policy.getPolicyContent();
             String policyContentString = new String(policyContent.getContent(),
                     StandardCharsets.UTF_8);
 
@@ -173,11 +173,11 @@ public class SpectralValidationEngine implements ValidationEngine {
      * Get Rule Violations from a JSON response
      *
      * @param resultJson JSON response
-     * @param policy    Governance Policy
+     * @param policy     Governance Policy
      * @return List of Rule Violations
      * @throws APIMGovernanceException If an error occurs while getting the rule violations
      */
-    private List<RuleViolation> getRuleViolationsFromJsonResponse(String resultJson, Policy policy)
+    private List<RuleViolation> getRuleViolationsFromJsonResponse(String resultJson, APIMGovPolicy policy)
             throws APIMGovernanceException {
         ObjectMapper objectMapper = new ObjectMapper();
         List<RuleViolation> violations = new ArrayList<>();

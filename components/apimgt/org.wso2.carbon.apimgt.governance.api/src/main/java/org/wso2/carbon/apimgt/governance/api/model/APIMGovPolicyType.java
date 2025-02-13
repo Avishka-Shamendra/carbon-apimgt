@@ -19,18 +19,21 @@
 package org.wso2.carbon.apimgt.governance.api.model;
 
 /**
- * This class represents a governance rule category
+ * This class represents a governance policy type
  */
-public enum PolicyCategory {
-    SPECTRAL,
-    AI;
+public enum APIMGovPolicyType {
+    API_METADATA,
+    API_DEFINITION,
+    API_DOCUMENTATION;
 
-    public static PolicyCategory fromString(String text) {
-        if ("spectral".equalsIgnoreCase(text)) {
-            return PolicyCategory.SPECTRAL;
-        } else if ("ai".equalsIgnoreCase(text)) {
-            return PolicyCategory.AI;
+    public static APIMGovPolicyType fromString(String ruleTypeString) {
+        if ("api_metadata".equalsIgnoreCase(ruleTypeString)) {
+            return APIMGovPolicyType.API_METADATA;
+        } else if ("api_definition".equalsIgnoreCase(ruleTypeString)) {
+            return APIMGovPolicyType.API_DEFINITION;
+        } else if ("api_documentation".equalsIgnoreCase(ruleTypeString)) {
+            return APIMGovPolicyType.API_DOCUMENTATION;
         }
-        return PolicyCategory.SPECTRAL;
+        return null;
     }
 }

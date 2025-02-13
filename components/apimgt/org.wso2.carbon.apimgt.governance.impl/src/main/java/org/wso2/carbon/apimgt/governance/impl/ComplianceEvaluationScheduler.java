@@ -25,8 +25,8 @@ import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactType;
 import org.wso2.carbon.apimgt.governance.api.model.ComplianceEvaluationRequest;
 import org.wso2.carbon.apimgt.governance.api.model.ExtendedArtifactType;
-import org.wso2.carbon.apimgt.governance.api.model.Policy;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyType;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicy;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyType;
 import org.wso2.carbon.apimgt.governance.api.model.RuleViolation;
 import org.wso2.carbon.apimgt.governance.impl.dao.ComplianceMgtDAO;
 import org.wso2.carbon.apimgt.governance.impl.dao.impl.ComplianceMgtDAOImpl;
@@ -218,7 +218,7 @@ public class ComplianceEvaluationScheduler {
             }
 
             // Extract artifact project content to map
-            Map<PolicyType, String> artifactProjectContentMap = APIMGovernanceUtil.extractArtifactProjectContent
+            Map<APIMGovPolicyType, String> artifactProjectContentMap = APIMGovernanceUtil.extractArtifactProjectContent
                     (artifactProject, artifactType);
 
 
@@ -260,7 +260,7 @@ public class ComplianceEvaluationScheduler {
      */
     private static void evaluteArtifactWithPolicyAttachment(String artifactRefId, ArtifactType artifactType,
                                                             String policyAttachmentId,
-                                                            Map<PolicyType, String> artifactProjectContentMap,
+                                                            Map<APIMGovPolicyType, String> artifactProjectContentMap,
                                                             String organization)
             throws APIMGovernanceException {
 
@@ -268,12 +268,12 @@ public class ComplianceEvaluationScheduler {
                 .getValidationEngineService().getValidationEngine();
 
         // Validate the artifact against each policy in the policy attachment
-        List<Policy> policies = GovernancePolicyAttachmentMgtDAOImpl.getInstance()
+        List<APIMGovPolicy> policies = GovernancePolicyAttachmentMgtDAOImpl.getInstance()
                 .getPoliciesWithContentByPolicyAttachmentId(policyAttachmentId, organization);
 
         Map<String, List<RuleViolation>> policyViolationsMap = new HashMap<>();
 
-        for (Policy policy : policies) {
+        for (APIMGovPolicy policy : policies) {
             List<RuleViolation> ruleViolations = new ArrayList<>();
 
             // Check if policy's artifact type matches with the artifact's type
@@ -282,7 +282,7 @@ public class ComplianceEvaluationScheduler {
                     APIMUtil.getExtendedArtifactTypeForAPI(APIMUtil.getAPIType(artifactRefId)))) {
 
                 // Get target file content from artifact project based on ruleType
-                PolicyType policyType = policy.getPolicyType();
+                APIMGovPolicyType policyType = policy.getPolicyType();
                 String contentToValidate = artifactProjectContentMap.get(policyType);
 
                 if (contentToValidate == null) {

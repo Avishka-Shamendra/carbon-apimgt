@@ -21,12 +21,12 @@ package org.wso2.carbon.apimgt.governance.api.model;
 /**
  * This class represents a governance policy information excluding the policy content
  */
-public class PolicyInfo {
+public class APIMGovPolicyInfo {
     private String id;
     private String name;
     private String description;
-    private PolicyCategory policyCategory;
-    private PolicyType policyType;
+    private APIMGovPolicyCategory policyCategory;
+    private APIMGovPolicyType policyType;
     private ExtendedArtifactType artifactType;
     private String documentationLink;
     private String provider;
@@ -59,11 +59,11 @@ public class PolicyInfo {
         this.description = description;
     }
 
-    public PolicyType getPolicyType() {
+    public APIMGovPolicyType getPolicyType() {
         return policyType;
     }
 
-    public void setPolicyType(PolicyType policyType) {
+    public void setPolicyType(APIMGovPolicyType policyType) {
         this.policyType = policyType;
     }
 
@@ -123,11 +123,11 @@ public class PolicyInfo {
         this.updatedTime = updatedTime;
     }
 
-    public PolicyCategory getPolicyCategory() {
+    public APIMGovPolicyCategory getPolicyCategory() {
         return policyCategory;
     }
 
-    public void setPolicyCategory(PolicyCategory policyCategory) {
+    public void setPolicyCategory(APIMGovPolicyCategory policyCategory) {
         this.policyCategory = policyCategory;
     }
 }

@@ -21,10 +21,10 @@ package org.wso2.carbon.apimgt.governance.impl;
 import org.wso2.carbon.apimgt.governance.api.ValidationEngine;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
-import org.wso2.carbon.apimgt.governance.api.model.Policy;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyContent;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyInfo;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyList;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicy;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyContent;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyList;
 import org.wso2.carbon.apimgt.governance.api.model.Rule;
 import org.wso2.carbon.apimgt.governance.impl.dao.PolicyMgtDAO;
 import org.wso2.carbon.apimgt.governance.impl.dao.impl.PolicyMgtDAOImpl;
@@ -54,7 +54,7 @@ public class PolicyManager {
      * @return Policy Created object
      */
 
-    public PolicyInfo createNewPolicy(Policy policy, String organization) throws APIMGovernanceException {
+    public APIMGovPolicyInfo createNewPolicy(APIMGovPolicy policy, String organization) throws APIMGovernanceException {
 
         if (policyMgtDAO.getPolicyByName(policy.getName(), organization) != null) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.POLICY_ALREADY_EXIST, policy.getName(),
@@ -85,7 +85,7 @@ public class PolicyManager {
      */
 
     public void deletePolicy(String policyId, String organization) throws APIMGovernanceException {
-        PolicyInfo policy = policyMgtDAO.getPolicyById(policyId, organization);
+        APIMGovPolicyInfo policy = policyMgtDAO.getPolicyById(policyId, organization);
         if (policy == null) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.POLICY_NOT_FOUND, policyId);
         } else if (isPolicyLinkedWithAttachments(policyId, organization)) {
@@ -118,16 +118,16 @@ public class PolicyManager {
      * @throws APIMGovernanceException If an error occurs while updating the policy
      */
 
-    public PolicyInfo updatePolicy(String policyId, Policy policy, String organization)
+    public APIMGovPolicyInfo updatePolicy(String policyId, APIMGovPolicy policy, String organization)
             throws APIMGovernanceException {
 
-        PolicyInfo existingPolicy = policyMgtDAO.getPolicyById(policyId, organization);
+        APIMGovPolicyInfo existingPolicy = policyMgtDAO.getPolicyById(policyId, organization);
         if (existingPolicy == null) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.POLICY_NOT_FOUND, policyId);
         }
 
         String newName = policy.getName();
-        PolicyInfo existingPolicyByName = policyMgtDAO.getPolicyByName(newName, organization);
+        APIMGovPolicyInfo existingPolicyByName = policyMgtDAO.getPolicyByName(newName, organization);
         if (existingPolicyByName != null && !existingPolicyByName.getId().equals(policyId)) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.POLICY_ALREADY_EXIST, newName, organization);
         }
@@ -154,7 +154,7 @@ public class PolicyManager {
      * @throws APIMGovernanceException If an error occurs while getting the policies
      */
 
-    public PolicyList getPolicies(String organization) throws APIMGovernanceException {
+    public APIMGovPolicyList getPolicies(String organization) throws APIMGovernanceException {
         return policyMgtDAO.getPolicies(organization);
     }
 
@@ -167,8 +167,8 @@ public class PolicyManager {
      * @throws APIMGovernanceException If an error occurs while getting the policy
      */
 
-    public PolicyInfo getPolicyById(String policyId, String organization) throws APIMGovernanceException {
-        PolicyInfo policy = policyMgtDAO.getPolicyById(policyId, organization);
+    public APIMGovPolicyInfo getPolicyById(String policyId, String organization) throws APIMGovernanceException {
+        APIMGovPolicyInfo policy = policyMgtDAO.getPolicyById(policyId, organization);
         if (policy == null) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.POLICY_NOT_FOUND, policyId);
         }
@@ -184,8 +184,8 @@ public class PolicyManager {
      * @throws APIMGovernanceException If an error occurs while getting the policy content
      */
 
-    public PolicyContent getPolicyContent(String policyId, String organization) throws APIMGovernanceException {
-        PolicyContent content = policyMgtDAO.getPolicyContent(policyId, organization);
+    public APIMGovPolicyContent getPolicyContent(String policyId, String organization) throws APIMGovernanceException {
+        APIMGovPolicyContent content = policyMgtDAO.getPolicyContent(policyId, organization);
         if (content == null) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.POLICY_NOT_FOUND, policyId);
         }
@@ -203,7 +203,7 @@ public class PolicyManager {
      */
 
     public List<String> getPolicyUsage(String policyId, String organization) throws APIMGovernanceException {
-        PolicyInfo policy = policyMgtDAO.getPolicyById(policyId, organization);
+        APIMGovPolicyInfo policy = policyMgtDAO.getPolicyById(policyId, organization);
         if (policy == null) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.POLICY_NOT_FOUND, policyId);
         }
@@ -235,7 +235,7 @@ public class PolicyManager {
      * @throws APIMGovernanceException If an error occurs while searching for policies
      */
 
-    public PolicyList searchPolicies(String query, String organization) throws APIMGovernanceException {
+    public APIMGovPolicyList searchPolicies(String query, String organization) throws APIMGovernanceException {
         Map<String, String> searchCriteria = getPolicySearchCriteria(query);
         return policyMgtDAO.searchPolicies(searchCriteria, organization);
 

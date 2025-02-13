@@ -23,7 +23,7 @@ import org.wso2.carbon.apimgt.governance.api.error.APIMGovExceptionCodes;
 import org.wso2.carbon.apimgt.governance.api.error.APIMGovernanceException;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactComplianceState;
 import org.wso2.carbon.apimgt.governance.api.model.ArtifactType;
-import org.wso2.carbon.apimgt.governance.api.model.PolicyInfo;
+import org.wso2.carbon.apimgt.governance.api.model.APIMGovPolicyInfo;
 import org.wso2.carbon.apimgt.governance.api.model.Rule;
 import org.wso2.carbon.apimgt.governance.api.model.RuleSeverity;
 import org.wso2.carbon.apimgt.governance.api.model.RuleViolation;
@@ -175,7 +175,7 @@ public class ComplianceAPIUtil {
         }
 
         // Retrieve policy attachments tied to the policy attachment
-        List<PolicyInfo> policiesInAttachment = policyAttachmentManager.getPoliciesByPolicyAttachmentId(attachmentId,
+        List<APIMGovPolicyInfo> policiesInAttachment = policyAttachmentManager.getPoliciesByPolicyAttachmentId(attachmentId,
                 organization);
 
         // Retrieve the evaluated policies for the policy
@@ -187,7 +187,7 @@ public class ComplianceAPIUtil {
         List<PolicyValidationResultWithoutRulesDTO> policyValidationResults = new ArrayList<>();
 
         // Get validation results for each policy
-        for (PolicyInfo govPolicy : policiesInAttachment) {
+        for (APIMGovPolicyInfo govPolicy : policiesInAttachment) {
             boolean isPolicyEvaluated = evaluatedPolicies.contains(govPolicy.getId());
 
             PolicyValidationResultWithoutRulesDTO resultDTO = getPolicyValidationResultsDTO(govPolicy, artifactRefId,
@@ -222,7 +222,7 @@ public class ComplianceAPIUtil {
      * @return PolicyValidationResultDTO
      * @throws APIMGovernanceException if an error occurs while updating the policy validation results
      */
-    private static PolicyValidationResultWithoutRulesDTO getPolicyValidationResultsDTO(PolicyInfo policy, String
+    private static PolicyValidationResultWithoutRulesDTO getPolicyValidationResultsDTO(APIMGovPolicyInfo policy, String
             artifactRefId, ArtifactType artifactType, String organization, boolean isPolicyEvaluated)
             throws APIMGovernanceException {
 
@@ -457,7 +457,7 @@ public class ComplianceAPIUtil {
         ComplianceManager complianceManager = new ComplianceManager();
         PolicyManager policyManager = new PolicyManager();
 
-        PolicyInfo policyInfo = policyManager.getPolicyById(policyId, organization);
+        APIMGovPolicyInfo policyInfo = policyManager.getPolicyById(policyId, organization);
 
         // If the policy is not found, throw an exception
         if (policyInfo == null) {
