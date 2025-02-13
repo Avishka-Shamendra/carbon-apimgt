@@ -37,6 +37,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLIntegrityConstraintViolationException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -98,6 +99,8 @@ public class ComplianceMgtDAOImpl implements ComplianceMgtDAO {
                     try (PreparedStatement prepStmnt = connection.prepareStatement(sqlQuery)) {
                         prepStmnt.setString(1, requestId);
                         prepStmnt.setString(2, artifactKey);
+                        Timestamp requestedTime = new Timestamp(System.currentTimeMillis());
+                        prepStmnt.setTimestamp(3, requestedTime);
                         prepStmnt.executeUpdate();
                     }
                 }
@@ -228,7 +231,9 @@ public class ComplianceMgtDAOImpl implements ComplianceMgtDAO {
         String sqlQuery = SQLConstants.UPDATE_GOV_REQ_STATUS_TO_PROCESSING;
         try (Connection connection = APIMGovernanceDBUtil.getConnection();
              PreparedStatement prepStmnt = connection.prepareStatement(sqlQuery)) {
-            prepStmnt.setString(1, requestId);
+            Timestamp processingTime = new Timestamp(System.currentTimeMillis());
+            prepStmnt.setTimestamp(1, processingTime);
+            prepStmnt.setString(2, requestId);
             int affectedRows = prepStmnt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLIntegrityConstraintViolationException e) {
@@ -608,6 +613,8 @@ public class ComplianceMgtDAOImpl implements ComplianceMgtDAO {
         try (PreparedStatement prepStmnt = connection.prepareStatement(sqlQuery)) {
             prepStmnt.setString(1, artifactKey);
             prepStmnt.setString(2, policyAttachmentId);
+            Timestamp runTimestamp = new Timestamp(System.currentTimeMillis());
+            prepStmnt.setTimestamp(3, runTimestamp);
             prepStmnt.executeUpdate();
         }
     }
@@ -632,6 +639,8 @@ public class ComplianceMgtDAOImpl implements ComplianceMgtDAO {
             prepStmnt.setString(2, artifactKey);
             prepStmnt.setString(3, policyId);
             prepStmnt.setInt(4, isPolicyEvalSuccess ? 1 : 0);
+            Timestamp runTimestamp = new Timestamp(System.currentTimeMillis());
+            prepStmnt.setTimestamp(5, runTimestamp);
             prepStmnt.executeUpdate();
             return policyResultId;
         }

@@ -30,14 +30,11 @@ public enum ComplianceEvaluationStatus {
     PENDING,
     PROCESSING;
 
-    private static final Map<String, ComplianceEvaluationStatus> STRING_TO_ENUM =
-            Stream.of(values())
-                    .collect(Collectors.toMap(status -> status.name().toLowerCase(Locale.ENGLISH), status -> status));
-
     public static ComplianceEvaluationStatus fromString(String statusString) {
-        return STRING_TO_ENUM.getOrDefault(
-                statusString != null ? statusString.toLowerCase(Locale.ENGLISH) : "",
-                PENDING
-        );
+        try {
+            return ComplianceEvaluationStatus.valueOf(statusString.toUpperCase(Locale.ENGLISH));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

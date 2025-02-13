@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.apimgt.governance.api.model;
 
+import java.util.Locale;
+
 /**
  * This class represents a governance policy type
  */
@@ -27,13 +29,10 @@ public enum APIMGovPolicyType {
     API_DOCUMENTATION;
 
     public static APIMGovPolicyType fromString(String ruleTypeString) {
-        if ("api_metadata".equalsIgnoreCase(ruleTypeString)) {
-            return APIMGovPolicyType.API_METADATA;
-        } else if ("api_definition".equalsIgnoreCase(ruleTypeString)) {
-            return APIMGovPolicyType.API_DEFINITION;
-        } else if ("api_documentation".equalsIgnoreCase(ruleTypeString)) {
-            return APIMGovPolicyType.API_DOCUMENTATION;
+        try {
+            return APIMGovPolicyType.valueOf(ruleTypeString.toUpperCase(Locale.ENGLISH));
+        } catch (IllegalArgumentException e) {
+            return null;
         }
-        return null;
     }
 }

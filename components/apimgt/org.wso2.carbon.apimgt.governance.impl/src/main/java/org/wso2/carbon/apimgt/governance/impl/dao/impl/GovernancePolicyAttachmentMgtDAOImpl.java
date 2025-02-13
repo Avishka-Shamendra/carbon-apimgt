@@ -43,6 +43,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,31 +75,36 @@ public class GovernancePolicyAttachmentMgtDAOImpl implements GovernancePolicyAtt
     /**
      * Create a new Governance Policy
      *
-     * @param governancePolicyAttachment Governance Attachment with Policy Ids
-     * @param organization               Organization
+     * @param govPolicyAttachment Governance Attachment with Policy Ids
+     * @param organization        Organization
      * @return APIMGovernancePolicy Created object
      */
     @Override
     public APIMGovPolicyAttachment createGovernancePolicyAttachment(APIMGovPolicyAttachment
-                                                                            governancePolicyAttachment,
+                                                                            govPolicyAttachment,
                                                                     String organization)
-            throws APIMGovernanceException {
+    throws APIMGovernanceException {
         try (Connection connection = APIMGovernanceDBUtil.getConnection()) {
             connection.setAutoCommit(false);
             try {
                 try (PreparedStatement prepStmt = connection.prepareStatement(SQLConstants.CREATE_POLICY_ATTACHMENT)) {
-                    prepStmt.setString(1, governancePolicyAttachment.getId());
-                    prepStmt.setString(2, governancePolicyAttachment.getName());
-                    prepStmt.setString(3, governancePolicyAttachment.getDescription());
+                    prepStmt.setString(1, govPolicyAttachment.getId());
+                    prepStmt.setString(2, govPolicyAttachment.getName());
+                    prepStmt.setString(3, govPolicyAttachment.getDescription());
                     prepStmt.setString(4, organization);
-                    prepStmt.setString(5, governancePolicyAttachment.getCreatedBy());
-                    prepStmt.setInt(6, governancePolicyAttachment.isGlobal() ? 1 : 0);
+                    prepStmt.setString(5, govPolicyAttachment.getCreatedBy());
+                    prepStmt.setInt(6, govPolicyAttachment.isGlobal() ? 1 : 0);
+
+                    Timestamp createdTime = new Timestamp(System.currentTimeMillis());
+                    prepStmt.setTimestamp(7, createdTime);
+                    govPolicyAttachment.setCreatedTime(createdTime.toString());
+
                     prepStmt.execute();
                 }
 
-                insertPolicyAttachmentPolicyMapping(connection, governancePolicyAttachment);
-                insertPolicyAttachmentLabels(connection, governancePolicyAttachment);
-                insertPolicyAttachmentsStatesAndActions(connection, governancePolicyAttachment);
+                insertPolicyAttachmentPolicyMapping(connection, govPolicyAttachment);
+                insertPolicyAttachmentLabels(connection, govPolicyAttachment);
+                insertPolicyAttachmentsStatesAndActions(connection, govPolicyAttachment);
 
                 connection.commit();
             } catch (SQLException e) {
@@ -109,7 +115,7 @@ public class GovernancePolicyAttachmentMgtDAOImpl implements GovernancePolicyAtt
             throw new APIMGovernanceException(APIMGovExceptionCodes.ERROR_WHILE_CREATING_POLICY_ATTACHMENT, e,
                     organization);
         }
-        return getGovernancePolicyAttachmentByID(governancePolicyAttachment.getId(), organization);
+        return govPolicyAttachment;
     }
 
     /**
@@ -211,8 +217,13 @@ public class GovernancePolicyAttachmentMgtDAOImpl implements GovernancePolicyAtt
                     updateStatement.setString(2, policyAttachment.getDescription());
                     updateStatement.setString(3, policyAttachment.getUpdatedBy());
                     updateStatement.setInt(4, policyAttachment.isGlobal() ? 1 : 0);
-                    updateStatement.setString(5, policyAttachmentId);
-                    updateStatement.setString(6, organization);
+
+                    Timestamp updatedTime = new Timestamp(System.currentTimeMillis());
+                    updateStatement.setTimestamp(5, updatedTime);
+                    policyAttachment.setUpdatedTime(updatedTime.toString());
+
+                    updateStatement.setString(6, policyAttachmentId);
+                    updateStatement.setString(7, organization);
                     updateStatement.executeUpdate();
                 }
                 updatePolicyAttachmentPolicyMappings(connection, policyAttachmentId, policyAttachment);
@@ -230,7 +241,8 @@ public class GovernancePolicyAttachmentMgtDAOImpl implements GovernancePolicyAtt
             throw new APIMGovernanceException(APIMGovExceptionCodes.ERROR_WHILE_UPDATING_POLICY_ATTACHMENT, e,
                     policyAttachmentId);
         }
-        return getGovernancePolicyAttachmentByID(policyAttachmentId, organization);
+        policyAttachment.setId(policyAttachmentId);
+        return policyAttachment;
     }
 
     /**

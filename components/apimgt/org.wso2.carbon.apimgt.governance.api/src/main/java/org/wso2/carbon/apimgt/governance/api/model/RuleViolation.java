@@ -26,6 +26,7 @@ public class RuleViolation {
     private ArtifactType artifactType; // Type of the artifact (API)
     private String policyId; // policy which contains the violated rule
     private String ruleName;  // name of the violated rule
+    private APIMGovPolicyType policyType; // type of the violated policy
     private String violatedPath; // Path in which the violation occurred
     private RuleSeverity severity; // Severity of the violation
     private String ruleMessage; // Message of the violated rule
@@ -93,5 +94,13 @@ public class RuleViolation {
 
     public void setOrganization(String organization) {
         this.organization = organization;
+    }
+
+    public APIMGovPolicyType getPolicyType() {
+        return policyType;
+    }
+
+    public void setPolicyType(APIMGovPolicyType policyType) {
+        this.policyType = policyType;
     }
 }

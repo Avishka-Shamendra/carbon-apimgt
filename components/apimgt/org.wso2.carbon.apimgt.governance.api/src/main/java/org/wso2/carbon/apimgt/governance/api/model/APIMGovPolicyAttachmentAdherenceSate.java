@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.apimgt.governance.api.model;
 
+import java.util.Locale;
+
 /**
  * This enum represents the adherence state of a policy attachment
  */
@@ -27,14 +29,10 @@ public enum APIMGovPolicyAttachmentAdherenceSate {
     UNAPPPLIED;
 
     public static APIMGovPolicyAttachmentAdherenceSate fromString(String text) {
-
-        if ("followed".equalsIgnoreCase(text)) {
-            return FOLLOWED;
-        } else if ("violated".equalsIgnoreCase(text)) {
-            return VIOLATED;
-        } else if ("unapplied".equalsIgnoreCase(text)) {
-            return UNAPPPLIED;
+        try {
+            return APIMGovPolicyAttachmentAdherenceSate.valueOf(text.toUpperCase(Locale.ENGLISH));
+        } catch (IllegalArgumentException e) {
+            return null;
         }
-        return null;
     }
 }

@@ -26,8 +26,8 @@ public class SQLConstants {
     public static final String CREATE_POLICY =
             "INSERT INTO GOV_POLICY (POLICY_ID, NAME, DESCRIPTION, " +
                     "POLICY_CATEGORY, POLICY_TYPE, ARTIFACT_TYPE, " +
-                    "DOCUMENTATION_LINK, PROVIDER, ORGANIZATION, CREATED_BY) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    "DOCUMENTATION_LINK, PROVIDER, ORGANIZATION, CREATED_BY, CREATED_TIME) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     public static final String ADD_POLICY_CONTENT =
             "INSERT INTO GOV_POLICY_CONTENT(POLICY_ID, CONTENT, CONTENT_TYPE, FILE_NAME) " +
@@ -65,7 +65,7 @@ public class SQLConstants {
             "UPDATE GOV_POLICY SET NAME = ?, DESCRIPTION = ?, " +
                     "POLICY_CATEGORY = ?, POLICY_TYPE = ?, ARTIFACT_TYPE = " +
                     "?, DOCUMENTATION_LINK = ?, PROVIDER = ?, UPDATED_BY = ?, " +
-                    "LAST_UPDATED_TIME = CURRENT_TIMESTAMP " +
+                    "LAST_UPDATED_TIME = ? " +
                     "WHERE POLICY_ID = ? AND ORGANIZATION = ?";
 
     public static final String UPDATE_POLICY_CONTENT =
@@ -97,8 +97,8 @@ public class SQLConstants {
 
     public static final String CREATE_POLICY_ATTACHMENT =
             "INSERT INTO GOV_POLICY_ATTACHMENT (POLICY_ATTACHMENT_ID, NAME, DESCRIPTION, " +
-                    "ORGANIZATION, CREATED_BY, IS_GLOBAL) " +
-                    "VALUES (?, ?, ?, ?, ?, ?)";
+                    "ORGANIZATION, CREATED_BY, IS_GLOBAL, CREATED_TIME) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)";
 
     public static final String CREATE_POLICY_ATTACHMENT_POLICY_MAPPING =
             "INSERT INTO GOV_POLICY_ATTACHMENT_POLICY (POLICY_ATTACHMENT_ID, POLICY_ID) VALUES (?, ?)";
@@ -155,7 +155,7 @@ public class SQLConstants {
 
     public static final String UPDATE_POLICY_ATTACHMENT =
             "UPDATE GOV_POLICY_ATTACHMENT SET NAME = ?, DESCRIPTION = ?, UPDATED_BY = ?, IS_GLOBAL = ?, " +
-                    "LAST_UPDATED_TIME = CURRENT_TIMESTAMP " +
+                    "LAST_UPDATED_TIME = ? " +
                     "WHERE POLICY_ATTACHMENT_ID = ? AND ORGANIZATION = ?";
 
     public static final String GET_POLICY_IDS_BY_POLICY_ATTACHMENT_ID =
@@ -240,7 +240,7 @@ public class SQLConstants {
             "JOIN GOV_REQUEST GR ON GA.ARTIFACT_KEY = GR.ARTIFACT_KEY " +
             "WHERE GA.ARTIFACT_TYPE = ? AND GA.ORGANIZATION = ? AND GR.STATUS = 'PENDING'";
     public static final String ADD_GOV_EVAL_REQ = "INSERT INTO GOV_REQUEST " +
-            "(REQ_ID, ARTIFACT_KEY) VALUES (?, ?)";
+            "(REQ_ID, ARTIFACT_KEY, REQ_TIMESTAMP) VALUES (?, ?, ?)";
 
     public static final String ADD_REQ_POLICY_ATTACHMENT_MAPPING = "INSERT INTO GOV_REQUEST_POLICY_ATTACHMENT " +
             "(REQ_ID, POLICY_ATTACHMENT_ID) VALUES (?, ?)";
@@ -254,7 +254,7 @@ public class SQLConstants {
             "FROM GOV_REQUEST_POLICY_ATTACHMENT WHERE REQ_ID = ?";
 
     public static final String UPDATE_GOV_REQ_STATUS_TO_PROCESSING = "UPDATE GOV_REQUEST " +
-            "SET STATUS = 'PROCESSING', PROCESSING_TIMESTAMP = CURRENT_TIMESTAMP WHERE REQ_ID = ?" +
+            "SET STATUS = 'PROCESSING', PROCESSING_TIMESTAMP = ? WHERE REQ_ID = ?" +
             "AND STATUS = 'PENDING'";
 
     public static final String UPDATE_GOV_REQ_STATUS_FROM_PROCESSING_TO_PENDING = "UPDATE GOV_REQUEST " +
@@ -290,10 +290,10 @@ public class SQLConstants {
             "GOV_REQUEST_POLICY_ATTACHMENT WHERE POLICY_ATTACHMENT_ID = ?";
 
     public static final String ADD_POLICY_ATTACHMENT_RUN = "INSERT INTO GOV_POLICY_ATTACHMENT_RUN " +
-            "(ARTIFACT_KEY, POLICY_ATTACHMENT_ID) VALUES (?, ?)";
+            "(ARTIFACT_KEY, POLICY_ATTACHMENT_ID, RUN_TIMESTAMP) VALUES (?, ?, ?)";
 
     public static final String ADD_POLICY_RUN = "INSERT INTO GOV_POLICY_RUN (POLICY_RUN_ID, " +
-            "ARTIFACT_KEY, POLICY_ID, RESULT) VALUES (?, ?, ?, ?)";
+            "ARTIFACT_KEY, POLICY_ID, RESULT, RUN_TIMESTAMP) VALUES (?, ?, ?, ?, ?)";
 
     public static final String ADD_RULE_VIOLATION = "INSERT INTO GOV_RULE_VIOLATION (ID, POLICY_RUN_ID, " +
             "POLICY_ID, RULE_NAME, VIOLATED_PATH, MESSAGE) VALUES (?, ?, ?, ?, ?, ?)";

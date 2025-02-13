@@ -44,6 +44,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -100,6 +101,11 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
                     prepStmt.setString(8, policy.getProvider());
                     prepStmt.setString(9, organization);
                     prepStmt.setString(10, policy.getCreatedBy());
+
+                    Timestamp createdTime = new Timestamp(System.currentTimeMillis());
+                    prepStmt.setTimestamp(11, createdTime);
+                    policy.setCreatedTime(createdTime.toString());
+
                     prepStmt.execute();
                 }
                 addPolicyContent(connection, policy.getId(), policy.getPolicyContent());
@@ -115,7 +121,7 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
                     policy.getName(), organization
             );
         }
-        return getPolicyById(policy.getId(), organization);
+        return getPolicyInfoByPolicy(policy);
     }
 
     /**
@@ -145,8 +151,13 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
                     prepStmt.setString(6, policy.getDocumentationLink());
                     prepStmt.setString(7, policy.getProvider());
                     prepStmt.setString(8, policy.getUpdatedBy());
-                    prepStmt.setString(9, policyId);
-                    prepStmt.setString(10, organization);
+
+                    Timestamp updatedTime = new Timestamp(System.currentTimeMillis());
+                    prepStmt.setTimestamp(9, updatedTime);
+                    policy.setUpdatedTime(updatedTime.toString());
+
+                    prepStmt.setString(10, policyId);
+                    prepStmt.setString(11, organization);
                     prepStmt.executeUpdate();
                 }
                 updatePolicyContent(connection, policy.getId(), policy.getPolicyContent());
@@ -167,7 +178,30 @@ public class PolicyMgtDAOImpl implements PolicyMgtDAO {
         } catch (SQLException | IOException e) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.ERROR_WHILE_UPDATING_POLICY, e, policyId);
         }
-        return getPolicyById(policyId, organization); // to return all info of the updated policy
+        return getPolicyInfoByPolicy(policy);
+    }
+
+    /**
+     * Get the Policy object from the PolicyInfo object
+     *
+     * @param policy PolicyInfo object
+     * @return Policy object
+     */
+    private APIMGovPolicyInfo getPolicyInfoByPolicy(APIMGovPolicy policy) {
+        APIMGovPolicyInfo policyInfo = new APIMGovPolicyInfo();
+        policyInfo.setId(policy.getId());
+        policyInfo.setName(policy.getName());
+        policyInfo.setDescription(policy.getDescription());
+        policyInfo.setPolicyCategory(policy.getPolicyCategory());
+        policyInfo.setPolicyType(policy.getPolicyType());
+        policyInfo.setArtifactType(policy.getArtifactType());
+        policyInfo.setDocumentationLink(policy.getDocumentationLink());
+        policyInfo.setProvider(policy.getProvider());
+        policyInfo.setCreatedBy(policy.getCreatedBy());
+        policyInfo.setCreatedTime(policy.getCreatedTime());
+        policyInfo.setUpdatedBy(policy.getUpdatedBy());
+        policyInfo.setUpdatedTime(policy.getUpdatedTime());
+        return policyInfo;
     }
 
     /**

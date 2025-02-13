@@ -78,11 +78,10 @@ public class SpectralValidationEngine implements ValidationEngine {
             String message = rootNode.path("message").asText();
             throw new APIMGovernanceException(APIMGovExceptionCodes.INVALID_POLICY_CONTENT_DETAILED,
                     policy.getName(), message);
-        } catch (InvalidContentTypeException e) {
+        } catch (InvalidContentTypeException | JsonProcessingException e) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.INVALID_POLICY_CONTENT, e, policy.getName());
-        } catch (JsonProcessingException e) {
-            log.error("Error while parsing rulseset validation result JSON string", e);
-            throw new APIMGovernanceException("Error while parsing policy validation result JSON string", e);
+        } catch (Throwable e) {
+            throw new APIMGovernanceException("Unexpected error while validating policy content.", e);
         }
     }
 
@@ -163,8 +162,7 @@ public class SpectralValidationEngine implements ValidationEngine {
         } catch (InvalidRulesetException | InvalidContentTypeException e) {
             throw new APIMGovernanceException(APIMGovExceptionCodes.INVALID_POLICY_CONTENT, policy.getName());
         } catch (Throwable e) {
-            log.error("Error occurred while verifying governance compliance ", e);
-            throw new APIMGovernanceException("Error occurred while verifying governance compliance ", e);
+            throw new APIMGovernanceException("Unexpected error occurred while verifying governance compliance ", e);
         }
     }
 

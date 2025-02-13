@@ -681,7 +681,7 @@ public class ComplianceManager {
     filterBlockableAndNonBlockableRuleViolations(String artifactRefId, ArtifactType artifactType,
                                                  APIMGovPolicyAttachment policyAttachment,
                                                  List<RuleViolation> ruleViolations, APIMGovernableState state,
-                                                 String organization) {
+                                                 String organization) throws APIMGovernanceException {
 
         // Identify blockable severities from the policy attachment
         List<RuleSeverity> blockableSeverities = new ArrayList<>();
@@ -700,11 +700,13 @@ public class ComplianceManager {
         List<RuleViolation> nonBlockingViolations = new ArrayList<>();
 
         // Iterate through the rule violations and categorize them as blockable and non-blockable
-        // based on blockableSeverities
+        // based on blockable severities
         for (RuleViolation ruleViolation : ruleViolations) {
             ruleViolation.setArtifactRefId(artifactRefId);
             ruleViolation.setArtifactType(artifactType);
             ruleViolation.setOrganization(organization);
+            ruleViolation.setPolicyType(new PolicyManager().getPolicyById(ruleViolation.getPolicyId(), organization)
+                    .getPolicyType());
             if (blockableSeverities.contains(ruleViolation.getSeverity())) {
                 blockableViolations.add(ruleViolation);
             } else {
